@@ -33,6 +33,17 @@
   }
   header h1 { margin: 0; font-size: 1.4rem; }
   header p { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.9; }
+  .update-info {
+    max-width: 900px;
+    margin: 0.9rem auto 0;
+    padding: 0.55rem 1rem;
+    text-align: center;
+    color: #f8e8d0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .update-info strong { color: #ffd166; }
+  .update-info span { display: block; font-size: 0.78rem; color: #b8a090; }
   .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
   .controls {
     background: var(--card);
@@ -153,6 +164,10 @@
   <h1>🎃 IDOL HALLOWEEN JAPAN 2026 タイムテーブル検索</h1>
   <p>ライブステージ ＋ 特典会（2Fコンコース）</p>
 </header>
+<div class="update-info" role="note">
+  <strong>📅 掲載情報：2026年10月26日 00:00時点</strong>
+  <span>スケジュールが変更になる場合があります。最新の公式発表をご確認ください。</span>
+</div>
 <div class="notice" style="background:#3a2040; border-left:5px solid #c77dff; margin:1rem auto; max-width:900px; padding:0.9rem 1.2rem; border-radius:8px; font-size:0.9rem;">
   <strong>📌 HEROINESの特典会について</strong><br>
   ブース27〜30 はHEROINES専用です。<br>
@@ -160,8 +175,6 @@
 </div>
 <div style="text-align:center; margin:1rem auto; max-width:900px;">
   <img src="venue_map.jpg" alt="会場マップ" style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
-  <p style="font-size:0.8rem; color:#b8a090; margin-top:0.5rem;">会場マップ（ステージ配置・特典会は2Fコンコース）<br>
-  ※マップが表示されない場合は、<strong>index.html</strong> と <strong>venue_map.jpg</strong> を同じフォルダに置いてください。</p>
 </div>
 <div class="container">
   <div class="controls">
@@ -187,9 +200,8 @@
   <div id="results"></div>
 </div>
 <footer>
-  ライブ出演：DAY1・DAY2は最新版のタイムテーブル画像を反映。特典会・DAY3は今回未更新です。最新情報は公式をご確認ください。<br>
-  会場: 埼玉スタジアム2002 野外特設ステージ ｜ 特典会は2Fコンコース屋内<br>
-  ※ブース27-30は全日程HEROINESの特典会専用（詳細タイテは後日発表）
+  会場：埼玉スタジアム2002 野外特設会場｜特典会：2Fコンコース<br>
+  ※DAY1・DAY2のライブは更新版を掲載。特典会・DAY3は別途公式情報をご確認ください。
 </footer>
 
 <script>

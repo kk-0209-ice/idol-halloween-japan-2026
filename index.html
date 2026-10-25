@@ -898,7 +898,10 @@ function render() {
       <div style="text-align:center; margin-top:1rem; display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
         <button id="flowViewBtn" style="padding:0.7rem 1.2rem; background:#c77dff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📅 1日の流れを見る</button>
         <button id="backToListBtn" style="padding:0.7rem 1.2rem; background:#3a2040; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; display:none;">← リストに戻る</button>
-        <button id="saveImageBtn" style="padding:0.7rem 1.5rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 画像として保存</button>
+        <button class="saveImageBtn" data-save-day="1" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY1保存</button>
+        <button class="saveImageBtn" data-save-day="2" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY2保存</button>
+        <button class="saveImageBtn" data-save-day="3" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY3保存</button>
+        <button class="saveImageBtn" data-save-all="true" style="padding:0.7rem 1rem; background:#c77dff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 全日程保存</button>
       </div>`;
     resultsDiv.innerHTML = html;
 
@@ -953,18 +956,24 @@ function render() {
       backBtn.style.display = "none";
     });
 
-    // iPhone Safari対応：PNGをBlobで作成し、iPhoneでは長押し保存用プレビューを表示
-    const saveBtn = document.getElementById("saveImageBtn");
-    if (saveBtn) {
+    // iPhone Safari対応：DAY1/DAY2/DAY3/全日程を個別のPNG画像として保存
+    document.querySelectorAll(".saveImageBtn").forEach(saveBtn => {
       saveBtn.addEventListener("click", async () => {
-        const target = document.getElementById("scheduleCapture");
-        if (!target) {
-          alert("保存対象が見つかりません。");
+        const isAll = saveBtn.dataset.saveAll === "true";
+        const requestedDay = isAll ? null : Number(saveBtn.dataset.saveDay);
+        const exportItems = filtered
+          .filter(item => isAll || item.day === requestedDay)
+          .slice()
+          .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+        if (!exportItems.length) {
+          alert(isAll ? "保存できる予定がありません。" : `DAY${requestedDay}に選択中の予定がありません。`);
           return;
         }
+        const originalLabel = saveBtn.textContent;
         saveBtn.textContent = "画像を作成中...";
         saveBtn.disabled = true;
         let previewUrl = null;
+        let exportTarget = null;
         try {
           if (typeof html2canvas === "undefined") {
             await new Promise((resolve, reject) => {
@@ -976,36 +985,63 @@ function render() {
               setTimeout(() => reject(new Error("読み込みがタイムアウトしました")), 10000);
             });
           }
-          const canvas = await html2canvas(target, {
-            backgroundColor: "#1a0f1f",
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            windowWidth: Math.max(document.documentElement.clientWidth, target.scrollWidth)
+
+          // 画面表示中のリスト/タイムライン表示に影響されない専用の画像内容を作る
+          exportTarget = document.createElement("div");
+          exportTarget.style.cssText = "position:fixed;left:-10000px;top:0;width:760px;padding:24px;background:#1a0f1f;color:#f8e8d0;font-family:Arial,'Hiragino Sans',Meiryo,sans-serif;box-sizing:border-box;";
+          const heading = document.createElement("h2");
+          heading.textContent = isAll ? "★ マイスケジュール（全日程）" : `★ マイスケジュール DAY${requestedDay} ${["","10/30(金)","10/31(土)","11/01(日)"][requestedDay]}`;
+          heading.style.cssText = "margin:0 0 20px;color:#c77dff;text-align:center;font-size:24px;";
+          exportTarget.appendChild(heading);
+          const daysToRender = [...new Set(exportItems.map(item => item.day))].sort((a,b) => a-b);
+          daysToRender.forEach(day => {
+            const dayHeading = document.createElement("h3");
+            dayHeading.textContent = `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]}`;
+            dayHeading.style.cssText = "margin:18px 0 10px;color:#ff6b00;font-size:20px;";
+            exportTarget.appendChild(dayHeading);
+            exportItems.filter(item => item.day === day).forEach(item => {
+              const row = document.createElement("div");
+              row.style.cssText = "display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:12px;background:#3a2040;border-radius:8px;font-size:16px;";
+              const time = document.createElement("span");
+              time.textContent = `${item.start}〜${item.end}`;
+              time.style.cssText = "font-weight:bold;color:#ffd166;min-width:125px;";
+              const group = document.createElement("span");
+              group.textContent = item.group;
+              group.style.cssText = "flex:1;font-weight:bold;overflow-wrap:anywhere;";
+              const place = document.createElement("span");
+              place.textContent = item.type === "live" ? `🎤 ${item.stage}` : `📸 ブース${item.booth || ""}`;
+              place.style.cssText = "color:#c77dff;font-size:14px;";
+              row.append(time, group, place);
+              exportTarget.appendChild(row);
+            });
+          });
+          document.body.appendChild(exportTarget);
+          const canvas = await html2canvas(exportTarget, {
+            backgroundColor: "#1a0f1f", scale: 2, useCORS: true, logging: false,
+            windowWidth: 800
           });
           const blob = await new Promise((resolve, reject) => {
             canvas.toBlob(result => result ? resolve(result) : reject(new Error("PNG画像を作成できませんでした")), "image/png");
           });
           previewUrl = URL.createObjectURL(blob);
+          const fileName = isAll ? "IHJ2026_マイスケジュール_全日程.png" : `IHJ2026_マイスケジュール_DAY${requestedDay}.png`;
           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
             (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
           if (isIOS) {
-            // iOS Safariは<a download>が安定しないため、画像をページ内に表示して長押し保存してもらう
             const oldModal = document.getElementById("imageSaveModal");
             if (oldModal) oldModal.remove();
             const modal = document.createElement("div");
             modal.id = "imageSaveModal";
             modal.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);overflow:auto;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;color:#fff;font-family:inherit;";
             const title = document.createElement("div");
-            title.textContent = "画像ができました";
+            title.textContent = `${isAll ? "全日程" : `DAY${requestedDay}`}の画像ができました`;
             title.style.cssText = "font-size:1.2rem;font-weight:bold;margin-top:8px;";
             const guide = document.createElement("div");
             guide.textContent = "下の画像を長押しして、『写真に保存』を選んでください。";
             guide.style.cssText = "font-size:.95rem;text-align:center;line-height:1.6;";
             const img = document.createElement("img");
             img.src = previewUrl;
-            img.alt = "マイスケジュール画像。長押しして写真に保存できます";
+            img.alt = `${fileName}。長押しして写真に保存できます`;
             img.style.cssText = "display:block;width:100%;height:auto;max-width:720px;border:1px solid #777;border-radius:8px;touch-action:manipulation;";
             const openBtn = document.createElement("button");
             openBtn.textContent = "画像だけを開く";
@@ -1014,15 +1050,12 @@ function render() {
             const closeBtn = document.createElement("button");
             closeBtn.textContent = "閉じる";
             closeBtn.style.cssText = "padding:10px 18px;border:1px solid #aaa;border-radius:8px;background:#333;color:white;font-size:1rem;margin-bottom:20px;";
-            closeBtn.addEventListener("click", () => {
-              modal.remove();
-              if (previewUrl) URL.revokeObjectURL(previewUrl);
-            });
+            closeBtn.addEventListener("click", () => { modal.remove(); if (previewUrl) URL.revokeObjectURL(previewUrl); });
             modal.append(title, guide, img, openBtn, closeBtn);
             document.body.appendChild(modal);
           } else {
             const link = document.createElement("a");
-            link.download = "IHJ2026_マイスケジュール.png";
+            link.download = fileName;
             link.href = previewUrl;
             link.style.display = "none";
             document.body.appendChild(link);
@@ -1032,14 +1065,15 @@ function render() {
           }
         } catch (e) {
           console.error("画像保存エラー:", e);
-          alert("画像を作成できませんでした。通信状態を確認して、もう一度お試しください。\n\niPhoneでは画像作成後、表示された画像を長押しして『写真に保存』を選びます。");
+          alert("画像を作成できませんでした。通信状態を確認して、もう一度お試しください。");
           if (previewUrl) URL.revokeObjectURL(previewUrl);
         } finally {
-          saveBtn.textContent = "📷 画像として保存";
+          if (exportTarget) exportTarget.remove();
+          saveBtn.textContent = originalLabel;
           saveBtn.disabled = false;
         }
       });
-    }
+    });
     return;
   }
 

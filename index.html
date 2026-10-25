@@ -909,8 +909,10 @@ function render() {
     const originalHtml = captureDiv.innerHTML;
     const flowBtn = document.getElementById("flowViewBtn");
     const backBtn = document.getElementById("backToListBtn");
+    let scheduleViewMode = "list";
 
     flowBtn?.addEventListener("click", () => {
+      scheduleViewMode = "flow";
       const flowHtml = days.map(day => {
         const items = byDay[day].sort((a,b) => a.start.localeCompare(b.start));
         const dateStr = ["","10/30(金)","10/31(土)","11/01(日)"][day];
@@ -951,6 +953,7 @@ function render() {
     });
 
     backBtn?.addEventListener("click", () => {
+      scheduleViewMode = "list";
       captureDiv.innerHTML = originalHtml;
       flowBtn.style.display = "inline-block";
       backBtn.style.display = "none";
@@ -989,27 +992,43 @@ function render() {
           // 画面表示中のリスト/タイムライン表示に影響されない専用の画像内容を作る
           exportTarget = document.createElement("div");
           exportTarget.style.cssText = "position:fixed;left:-10000px;top:0;width:760px;padding:24px;background:#1a0f1f;color:#f8e8d0;font-family:Arial,'Hiragino Sans',Meiryo,sans-serif;box-sizing:border-box;";
+          const viewLabel = scheduleViewMode === "flow" ? "1日の流れ" : "リスト";
           const heading = document.createElement("h2");
-          heading.textContent = isAll ? "★ マイスケジュール（全日程）" : `★ マイスケジュール DAY${requestedDay} ${["","10/30(金)","10/31(土)","11/01(日)"][requestedDay]}`;
+          heading.textContent = isAll ? `★ マイスケジュール（全日程・${viewLabel}）` : `★ マイスケジュール DAY${requestedDay} ${["","10/30(金)","10/31(土)","11/01(日)"][requestedDay]}（${viewLabel}）`;
           heading.style.cssText = "margin:0 0 20px;color:#c77dff;text-align:center;font-size:24px;";
           exportTarget.appendChild(heading);
           const daysToRender = [...new Set(exportItems.map(item => item.day))].sort((a,b) => a-b);
+          const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
           daysToRender.forEach(day => {
+            const dayItems = exportItems.filter(item => item.day === day).sort((a,b) => a.start.localeCompare(b.start));
             const dayHeading = document.createElement("h3");
-            dayHeading.textContent = `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]}`;
+            dayHeading.textContent = scheduleViewMode === "flow"
+              ? `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]} の流れ`
+              : `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]}`;
             dayHeading.style.cssText = "margin:18px 0 10px;color:#ff6b00;font-size:20px;";
             exportTarget.appendChild(dayHeading);
-            exportItems.filter(item => item.day === day).forEach(item => {
+            let rows = dayItems;
+            if (scheduleViewMode === "flow") {
+              rows = [];
+              let current = "11:00";
+              dayItems.forEach(item => {
+                if (toMin(item.start) > toMin(current)) rows.push({start:current,end:item.start,isBreak:true});
+                rows.push(item);
+                current = item.end;
+              });
+              if (toMin(current) < toMin("21:00")) rows.push({start:current,end:"21:00",isBreak:true});
+            }
+            rows.forEach(item => {
               const row = document.createElement("div");
-              row.style.cssText = "display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:12px;background:#3a2040;border-radius:8px;font-size:16px;";
+              row.style.cssText = `display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:12px;background:${item.isBreak ? "#2a2035" : "#3a2040"};border-radius:8px;font-size:16px;color:${item.isBreak ? "#b8a090" : "#f8e8d0"};`;
               const time = document.createElement("span");
               time.textContent = `${item.start}〜${item.end}`;
               time.style.cssText = "font-weight:bold;color:#ffd166;min-width:125px;";
               const group = document.createElement("span");
-              group.textContent = item.group;
+              group.textContent = item.isBreak ? "☕ 休憩・空き時間" : item.group;
               group.style.cssText = "flex:1;font-weight:bold;overflow-wrap:anywhere;";
               const place = document.createElement("span");
-              place.textContent = item.type === "live" ? `🎤 ${item.stage}` : `📸 ブース${item.booth || ""}`;
+              place.textContent = item.isBreak ? "" : (item.type === "live" ? `🎤 ${item.stage}` : `📸 ブース${item.booth || ""}`);
               place.style.cssText = "color:#c77dff;font-size:14px;";
               row.append(time, group, place);
               exportTarget.appendChild(row);

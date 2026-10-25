@@ -953,47 +953,91 @@ function render() {
       backBtn.style.display = "none";
     });
 
-    // Image save handler (improved)
+    // iPhone Safari対応：PNGをBlobで作成し、iPhoneでは長押し保存用プレビューを表示
     const saveBtn = document.getElementById("saveImageBtn");
     if (saveBtn) {
       saveBtn.addEventListener("click", async () => {
         const target = document.getElementById("scheduleCapture");
         if (!target) {
-          alert("保存対象が見つかりません");
+          alert("保存対象が見つかりません。");
           return;
         }
-        saveBtn.textContent = "生成中...";
+        saveBtn.textContent = "画像を作成中...";
         saveBtn.disabled = true;
+        let previewUrl = null;
         try {
-          // Try loading html2canvas
           if (typeof html2canvas === "undefined") {
             await new Promise((resolve, reject) => {
               const script = document.createElement("script");
               script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
               script.onload = resolve;
-              script.onerror = () => reject(new Error("CDN読み込み失敗"));
+              script.onerror = () => reject(new Error("画像作成ライブラリを読み込めませんでした"));
               document.head.appendChild(script);
-              setTimeout(() => reject(new Error("タイムアウト")), 8000);
+              setTimeout(() => reject(new Error("読み込みがタイムアウトしました")), 10000);
             });
           }
-          const canvas = await html2canvas(target, { 
-            backgroundColor: "#1a0f1f", 
+          const canvas = await html2canvas(target, {
+            backgroundColor: "#1a0f1f",
             scale: 2,
             useCORS: true,
-            allowTaint: true,
-            logging: false
+            logging: false,
+            windowWidth: Math.max(document.documentElement.clientWidth, target.scrollWidth)
           });
-          const link = document.createElement("a");
-          link.download = "IHJ2026_マイスケジュール.png";
-          link.href = canvas.toDataURL("image/png");
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => result ? resolve(result) : reject(new Error("PNG画像を作成できませんでした")), "image/png");
+          });
+          previewUrl = URL.createObjectURL(blob);
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+          if (isIOS) {
+            // iOS Safariは<a download>が安定しないため、画像をページ内に表示して長押し保存してもらう
+            const oldModal = document.getElementById("imageSaveModal");
+            if (oldModal) oldModal.remove();
+            const modal = document.createElement("div");
+            modal.id = "imageSaveModal";
+            modal.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);overflow:auto;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;color:#fff;font-family:inherit;";
+            const title = document.createElement("div");
+            title.textContent = "画像ができました";
+            title.style.cssText = "font-size:1.2rem;font-weight:bold;margin-top:8px;";
+            const guide = document.createElement("div");
+            guide.textContent = "下の画像を長押しして、『写真に保存』を選んでください。";
+            guide.style.cssText = "font-size:.95rem;text-align:center;line-height:1.6;";
+            const img = document.createElement("img");
+            img.src = previewUrl;
+            img.alt = "マイスケジュール画像。長押しして写真に保存できます";
+            img.style.cssText = "display:block;width:100%;height:auto;max-width:720px;border:1px solid #777;border-radius:8px;touch-action:manipulation;";
+            const openBtn = document.createElement("button");
+            openBtn.textContent = "画像だけを開く";
+            openBtn.style.cssText = "padding:12px 18px;border:0;border-radius:8px;background:#c77dff;color:white;font-weight:bold;font-size:1rem;";
+            openBtn.addEventListener("click", () => { window.open(previewUrl, "_blank"); });
+            const closeBtn = document.createElement("button");
+            closeBtn.textContent = "閉じる";
+            closeBtn.style.cssText = "padding:10px 18px;border:1px solid #aaa;border-radius:8px;background:#333;color:white;font-size:1rem;margin-bottom:20px;";
+            closeBtn.addEventListener("click", () => {
+              modal.remove();
+              if (previewUrl) URL.revokeObjectURL(previewUrl);
+            });
+            modal.append(title, guide, img, openBtn, closeBtn);
+            document.body.appendChild(modal);
+          } else {
+            const link = document.createElement("a");
+            link.download = "IHJ2026_マイスケジュール.png";
+            link.href = previewUrl;
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+          }
         } catch (e) {
-          alert("画像の自動保存に失敗しました。\n\nスマホの場合は、画面のスクリーンショット機能（電源ボタン＋音量ボタンなど）で保存してください。\nLINEのスクショと同じ方法です。");
+          console.error("画像保存エラー:", e);
+          alert("画像を作成できませんでした。通信状態を確認して、もう一度お試しください。\n\niPhoneでは画像作成後、表示された画像を長押しして『写真に保存』を選びます。");
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+        } finally {
+          saveBtn.textContent = "📷 画像として保存";
+          saveBtn.disabled = false;
         }
-        saveBtn.textContent = "📷 画像として保存";
-        saveBtn.disabled = false;
       });
     }
     return;

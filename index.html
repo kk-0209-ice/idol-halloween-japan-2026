@@ -187,7 +187,7 @@
   <div id="results"></div>
 </div>
 <footer>
-  データは公式特典会タイムテーブル画像を基に作成。最新情報は公式を確認してください。<br>
+  ライブ出演：DAY1・DAY2は最新版のタイムテーブル画像を反映。特典会・DAY3は今回未更新です。最新情報は公式をご確認ください。<br>
   会場: 埼玉スタジアム2002 野外特設ステージ ｜ 特典会は2Fコンコース屋内<br>
   ※ブース27-30は全日程HEROINESの特典会専用（詳細タイテは後日発表）
 </footer>
@@ -426,6 +426,7 @@ const schedule = [
   {day:3, type:"tokuten", booth:"27-30", group:"HEROINES（詳細後日発表）", start:"未定", end:"未定"},
 
   // ==================== LIVE PERFORMANCES ====================
+  // DAY1・DAY2: 2026-10-25受領の最新版ライブタイテ画像と再照合。DAY3・特典会は従来データを維持。
   // DAY 1 Live
   {day:1, type:"live", stage:"PUMPKIN", group:"Rain Tree", start:"12:00", end:"12:25"},
   {day:1, type:"live", stage:"PUMPKIN", group:"IMINI", start:"12:25", end:"12:50"},
@@ -472,7 +473,7 @@ const schedule = [
   {day:1, type:"live", stage:"GHOST", group:"ラストシーン", start:"13:50", end:"14:15"},
   {day:1, type:"live", stage:"GHOST", group:"江籠裕奈", start:"14:15", end:"14:40"},
   {day:1, type:"live", stage:"GHOST", group:"ハルカエコー", start:"14:45", end:"15:10"},
-  {day:1, type:"live", stage:"GHOST", group:"Ill", start:"15:10", end:"15:35"},
+  {day:1, type:"live", stage:"GHOST", group:"III", start:"15:10", end:"15:35"},
   {day:1, type:"live", stage:"GHOST", group:"AdamLilith", start:"15:35", end:"16:00"},
   {day:1, type:"live", stage:"GHOST", group:"BNSI", start:"16:10", end:"16:35"},
   {day:1, type:"live", stage:"GHOST", group:"selfish", start:"16:35", end:"17:00"},
@@ -525,13 +526,14 @@ const schedule = [
   {day:1, type:"live", stage:"SPIDER", group:"KAMAITACI", start:"19:05", end:"19:25"},
   {day:1, type:"live", stage:"SPIDER", group:"STARRY☆NIGHT", start:"19:25", end:"19:45"},
   {day:1, type:"live", stage:"SPIDER", group:"unFinale Tokyo", start:"19:45", end:"20:05"},
+  {day:1, type:"live", stage:"SPIDER", group:"アルテミスの翼", start:"20:05", end:"20:25"},
 
-  {day:1, type:"live", stage:"CANDY", group:"ラビットビット", start:"12:15", end:"12:35"},
+  {day:1, type:"live", stage:"CANDY", group:"Secret Pinky", start:"12:15", end:"12:35"},
   {day:1, type:"live", stage:"CANDY", group:"ルシフェルの庭。", start:"12:35", end:"12:55"},
   {day:1, type:"live", stage:"CANDY", group:"黒れ！神風", start:"12:55", end:"13:15"},
   {day:1, type:"live", stage:"CANDY", group:"As a Cutie Pomeranian", start:"13:15", end:"13:35"},
   {day:1, type:"live", stage:"CANDY", group:"ぷっとび！パンダミック", start:"13:40", end:"13:55"},
-  {day:1, type:"live", stage:"CANDY", group:"Secret Pinky", start:"13:55", end:"14:15"},
+  {day:1, type:"live", stage:"CANDY", group:"ラビットビット", start:"13:55", end:"14:15"},
 
   // ===== DAY 2 Live =====
   {day:2, type:"live", stage:"PUMPKIN", group:"アンスリウム", start:"11:00", end:"11:25"},
@@ -568,9 +570,10 @@ const schedule = [
   {day:2, type:"live", stage:"VAMPIRE", group:"Tohkei", start:"16:30", end:"16:55"},
   {day:2, type:"live", stage:"VAMPIRE", group:"myojou", start:"16:55", end:"17:20"},
   {day:2, type:"live", stage:"VAMPIRE", group:"マリークラウン", start:"17:20", end:"17:45"},
-  {day:2, type:"live", stage:"VAMPIRE", group:"THE ENCORE", start:"17:50", end:"18:15"},
-  {day:2, type:"live", stage:"VAMPIRE", group:"feelNEO", start:"18:15", end:"18:40"},
-  {day:2, type:"live", stage:"VAMPIRE", group:"ドラマチックレコード", start:"18:40", end:"19:05"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"III", start:"17:50", end:"18:15"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"THE ENCORE", start:"18:10", end:"18:40"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"feelNEO", start:"18:40", end:"19:05"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"ドラマチックレコード", start:"19:05", end:"19:30"},
 
   {day:2, type:"live", stage:"GHOST", group:"ヒロインズ研究生", start:"11:05", end:"11:30"},
   {day:2, type:"live", stage:"GHOST", group:"HelloYouth", start:"11:30", end:"11:55"},
@@ -626,7 +629,7 @@ const schedule = [
   {day:2, type:"live", stage:"SPIDER", group:"ヒロインズ研究生大阪", start:"15:55", end:"16:15"},
   {day:2, type:"live", stage:"SPIDER", group:"PIAGRIM", start:"16:15", end:"16:35"},
   {day:2, type:"live", stage:"SPIDER", group:"CAL&RES", start:"16:35", end:"16:55"},
-  {day:2, type:"live", stage:"SPIDER", group:"Ill", start:"17:00", end:"17:20"},
+  {day:2, type:"live", stage:"SPIDER", group:"ポンコツコンポ", start:"17:00", end:"17:20"},
   {day:2, type:"live", stage:"SPIDER", group:"LADYBABY", start:"17:20", end:"17:40"},
   {day:2, type:"live", stage:"SPIDER", group:"すてねこキャッツ", start:"17:40", end:"18:00"},
   {day:2, type:"live", stage:"SPIDER", group:"なんキニ！", start:"18:05", end:"18:25"},
@@ -789,6 +792,37 @@ let currentDay = "all";
 let currentType = "all";
 let showMySchedule = false;
 let selected = JSON.parse(localStorage.getItem("ihj2026_selected") || "[]");
+
+// 2026-10-30/31 最新ライブタイテ: 旧時刻で保存したマイスケジュールを新時刻へ引き継ぐ。
+// 特典会およびDAY3の選択情報は変更しない。
+const oldLiveSelections = [
+  [1, "Secret Pinky", "13:55", "Secret Pinky", "12:15"],
+  [1, "ラビットビット", "12:15", "ラビットビット", "13:55"],
+  [1, "Ill", "15:10", "III", "15:10"],
+  [2, "Ill", "17:00", "III", "17:50"],
+  [2, "III", "17:00", "III", "17:50"],
+  [2, "THE ENCORE", "17:50", "THE ENCORE", "18:10"],
+  [2, "feelNEO", "18:15", "feelNEO", "18:40"],
+  [2, "ドラマチックレコード", "18:40", "ドラマチックレコード", "19:05"]
+];
+let selectionUpdated = false;
+selected = selected.map(saved => {
+  if ((saved.type || "tokuten") !== "live") return saved;
+  const migration = oldLiveSelections.find(([day, oldGroup, oldStart]) =>
+    saved.day === day && saved.group === oldGroup && saved.start === oldStart);
+  if (!migration) return saved;
+  const replacement = schedule.find(item => item.type === "live" &&
+    item.day === migration[0] && item.group === migration[3] && item.start === migration[4]);
+  if (!replacement) return saved;
+  selectionUpdated = true;
+  return replacement;
+});
+if (selectionUpdated) {
+  selected = selected.filter((s, idx, all) => all.findIndex(x =>
+    x.day === s.day && x.group === s.group && x.start === s.start &&
+    (x.type || "tokuten") === (s.type || "tokuten")) === idx);
+  localStorage.setItem("ihj2026_selected", JSON.stringify(selected));
+}
 
 const searchInput = document.getElementById("search");
 const resultsDiv = document.getElementById("results");

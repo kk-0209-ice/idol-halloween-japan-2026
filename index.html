@@ -270,8 +270,8 @@
       </div>
       <p class="stage-filter-help">ステージを選ぶと、そのライブだけを表示します。日程・グループ名・時間帯と組み合わせて検索できます。</p>
     </div>
-    <input type="search" id="search" placeholder="グループ名を入力（例: Palette Parade, ジエメイ, KAWAII...）" autofocus>
-    <p class="hint">部分一致検索。ライブ・特典会・縁日を横断検索できます。複数グループを見たい場合はスペースで区切ってください（例: "UtaGe Onephony"）</p>
+    <input type="search" id="search" placeholder="グループ名・読みを入力（例: ワンフォニー、Rain Tree）" autofocus>
+    <p class="hint">英語名も日本語の読みで検索できます（例：ワンフォニー、レインツリー）。ひらがな・カタカナ対応。複数グループはスペース区切りで検索できます。</p>
     <div class="time-search" aria-labelledby="timeSearchTitle">
       <p class="time-search-title" id="timeSearchTitle">🕒 時間で検索・被りを確認</p>
       <div class="time-search-fields">
@@ -1541,8 +1541,559 @@ function itemKind(s) {
 function displayGroup(s) {
   return s.group + (s.note ? '（' + s.note + '）' : '');
 }
+// 検索用の表記ゆれを統一。ひらがな・カタカナ・全角英数字を同じものとして検索。
 function normalize(str) {
-  return str.toLowerCase().replace(/[☆★♡♥・\s]/g, "");
+  return String(str ?? "").normalize("NFKC").toLowerCase()
+    .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[☆★♡♥・\s\u3000'’‘"“”.,，。!！?？:：／/\()（）\[\]【】「」『』～〜~_\-+＃#@＠&＆×♯↗]/g, "");
+}
+
+// 読み仮名・通称は検索専用。公式タイテに掲載されたグループ名は変更しない。
+const groupReadingAliases = {
+  "FES☆TIVE": [
+    "フェスティブ"
+  ],
+  "log you": [
+    "ログユー"
+  ],
+  "REIRIE": [
+    "レイリエ",
+    "レイリー"
+  ],
+  "UtaGe!": [
+    "ウタゲ"
+  ],
+  "Onephony": [
+    "ワンフォニー"
+  ],
+  "KAWAII LAB. MATES": [
+    "カワイイラボメイツ",
+    "カワラボメイツ",
+    "カワラボ",
+    "カワイイラボ"
+  ],
+  "Toi Toi Toi": [
+    "トイトイトイ"
+  ],
+  "fav me": [
+    "ファブミー",
+    "ファヴミー"
+  ],
+  "アキシブproject": [
+    "アキシブプロジェクト"
+  ],
+  "NANIMONO": [
+    "ナニモノ"
+  ],
+  "Palette Parade": [
+    "パレットパレード",
+    "パレパレ"
+  ],
+  "LinQ": [
+    "リンク"
+  ],
+  "SEKAIE☆": [
+    "セカイエ"
+  ],
+  "chuLa": [
+    "チュラ"
+  ],
+  "BNSI": [
+    "ビーエヌエスアイ"
+  ],
+  "selfish": [
+    "セルフィッシュ"
+  ],
+  "HIBANA": [
+    "ヒバナ"
+  ],
+  "FULIT BOX": [
+    "フリットボックス",
+    "フリット"
+  ],
+  "feelNEO": [
+    "フィールネオ"
+  ],
+  "HzMe": [
+    "ヘルツミー",
+    "ヘルツメ"
+  ],
+  "hakanai": [
+    "ハカナイ"
+  ],
+  "メイビーME": [
+    "メイビーミー"
+  ],
+  "Malcolm Mask McLaren": [
+    "マルコムマスクマクラーレン",
+    "マルコム"
+  ],
+  "metarium": [
+    "メタリウム"
+  ],
+  "Ma'Scar'Piece": [
+    "マスカーピース",
+    "マスカピース"
+  ],
+  "RAVIDAVI": [
+    "ラビダビ"
+  ],
+  "HelloYouth": [
+    "ハローユース"
+  ],
+  "Chuu♡Cute": [
+    "チューキュート",
+    "チュウキュート"
+  ],
+  "Lily S/ash": [
+    "リリースラッシュ",
+    "リリーサッシュ"
+  ],
+  "AOSTARIA": [
+    "アオスタリア"
+  ],
+  "Maison de Queen": [
+    "メゾンドクイーン"
+  ],
+  "RePLAY": [
+    "リプレイ"
+  ],
+  "KissBee": [
+    "キスビー"
+  ],
+  "MEOWMEW": [
+    "ミャウミュー",
+    "ミオミュー",
+    "ミャウミュウ"
+  ],
+  "XINXIN": [
+    "シンシン"
+  ],
+  "Lily scale": [
+    "リリースケール"
+  ],
+  "PIAGRIM": [
+    "ピアグリム"
+  ],
+  "LIE LILLIE": [
+    "リーリリー",
+    "リエリリエ"
+  ],
+  "SAISON": [
+    "セゾン"
+  ],
+  "Aivery": [
+    "アイベリー",
+    "エイヴェリー",
+    "エイベリー"
+  ],
+  "buGG": [
+    "バグ"
+  ],
+  "KAMAITACI": [
+    "カマイタチ"
+  ],
+  "STARRY×NIGHT↗": [
+    "スターリーナイト"
+  ],
+  "unFinale Tokyo": [
+    "アンフィナーレトーキョー",
+    "アンフィナーレ"
+  ],
+  "Secret Pinky": [
+    "シークレットピンキー"
+  ],
+  "As a Cutie Pomeranian": [
+    "アズアキューティーポメラニアン",
+    "キューティーポメラニアン"
+  ],
+  "As a Cutie. Faster edition": [
+    "アズアキューティー",
+    "キューティー"
+  ],
+  "IMINI": [
+    "イミニ",
+    "アイミニ"
+  ],
+  "iMIN!": [
+    "イミン",
+    "アイミン"
+  ],
+  "Pastel Closet": [
+    "パステルクローゼット"
+  ],
+  "MEGAFON": [
+    "メガフォン"
+  ],
+  "III": [
+    "スリー",
+    "アイアイアイ"
+  ],
+  "AdamLilith": [
+    "アダムリリス"
+  ],
+  "TENRIN": [
+    "テンリン"
+  ],
+  "LADYBABY": [
+    "レディベイビー"
+  ],
+  "ION!": [
+    "アイオン",
+    "イオン"
+  ],
+  "ZUTTOMOTTO": [
+    "ズットモット"
+  ],
+  "CAL&RES": [
+    "カルレス"
+  ],
+  "INUWASI": [
+    "イヌワシ"
+  ],
+  "Appare!": [
+    "アッパレ"
+  ],
+  "NEO JAPONISM": [
+    "ネオジャポニズム",
+    "ネオジャポ"
+  ],
+  "JamsCollection": [
+    "ジャムズコレクション",
+    "ジャムズ"
+  ],
+  "AOAO": [
+    "アオアオ"
+  ],
+  "myojou": [
+    "ミョウジョウ",
+    "ミョージョー"
+  ],
+  "THE ENCORE": [
+    "ジアンコール",
+    "アンコール"
+  ],
+  "2nd争奪 Aブロック1位": [
+    "セカンドソウダツエーブロックイチイ"
+  ],
+  "#Mooove!": [
+    "ムーブ",
+    "ムーヴ"
+  ],
+  "NEVER END ROLL": [
+    "ネバーエンドロール"
+  ],
+  "Tohkei": [
+    "トウケイ"
+  ],
+  "amini": [
+    "アミニ"
+  ],
+  "MyDearDarlin'": [
+    "マイディアダーリン",
+    "マイディア"
+  ],
+  "STAiNY": [
+    "ステイニー"
+  ],
+  "RiNCENT♯": [
+    "リンセント"
+  ],
+  "ChumToto": [
+    "チャムトト"
+  ],
+  "himawari(船橋)": [
+    "ヒマワリ"
+  ],
+  "Lv.♡Charm": [
+    "レベルチャーム"
+  ],
+  "Märmi": [
+    "マーミ"
+  ],
+  "MAGICAL SPEC": [
+    "マジカルスペック"
+  ],
+  "Bunny La Crew": [
+    "バニーラクルー"
+  ],
+  "LOVE CHANT": [
+    "ラブチャント"
+  ],
+  "My Dresscode": [
+    "マイドレスコード",
+    "マイドレ"
+  ],
+  "ON THE AIR": [
+    "オンジエア",
+    "オンザエア"
+  ],
+  "SUPER JYAPON": [
+    "スーパージャポン"
+  ],
+  "BANKURUWASE!!": [
+    "バンクルワセ"
+  ],
+  "ParaLulu": [
+    "パラルル"
+  ],
+  "BUNGEE GUM.": [
+    "バンジーガム"
+  ],
+  "&CUTE": [
+    "アンドキュート"
+  ],
+  "BabyDoll": [
+    "ベイビードール"
+  ],
+  "GILTY×GILTY": [
+    "ギルティギルティ"
+  ],
+  "iLiFE!": [
+    "アイライフ"
+  ],
+  "KAWAII LAB. SOUTH": [
+    "カワイイラボサウス",
+    "カワラボサウス"
+  ],
+  "ZOCX": [
+    "ゾックエックス",
+    "ゾックス"
+  ],
+  "MORE STAR": [
+    "モアスター"
+  ],
+  "Merry BAD TUNE.": [
+    "メリーバッドチューン",
+    "メリバチ"
+  ],
+  "AVAM": [
+    "アヴァム",
+    "アバム"
+  ],
+  "@onefive": [
+    "ワンファイブ"
+  ],
+  "OS☆U": [
+    "オーエスユー"
+  ],
+  "愛乙女★DOLL": [
+    "ラブリードール"
+  ],
+  "AKANECLUB.": [
+    "アカネクラブ"
+  ],
+  "Ringwanderung": [
+    "リングワンデルング",
+    "リンワン"
+  ],
+  "AsIs": [
+    "アズイズ"
+  ],
+  "Pretty Chuu": [
+    "プリティチュー"
+  ],
+  "Sweet Alley": [
+    "スイートアレイ"
+  ],
+  "Peel the Apple": [
+    "ピールジアップル",
+    "ピールザアップル",
+    "ピルアポ"
+  ],
+  "Root mimi": [
+    "ルートミミ"
+  ],
+  "Sophià la Mode": [
+    "ソフィアラモード"
+  ],
+  "Switch Drop": [
+    "スイッチドロップ"
+  ],
+  "THE PINK MINDS": [
+    "ザピンクマインズ",
+    "ピンクマインズ"
+  ],
+  "VVSis": [
+    "ブイブイシス",
+    "ブイヴィーシス"
+  ],
+  "MixVeil": [
+    "ミックスベール"
+  ],
+  "Luce Twinkle Wink☆": [
+    "ルーチェトゥインクルウィンク",
+    "ルーチェ"
+  ],
+  "One Last Bloom": [
+    "ワンラストブルーム"
+  ],
+  "MATE×MATE!": [
+    "メイトメイト"
+  ],
+  "Lumiétoile": [
+    "ルミエトワール"
+  ],
+  "Bibbidi Chu": [
+    "ビビディチュー"
+  ],
+  "AZATOY": [
+    "アザトイ"
+  ],
+  "Cherie!": [
+    "シェリー"
+  ],
+  "ESTLINK☆": [
+    "エストリンク"
+  ],
+  "SPRISE": [
+    "スプライズ"
+  ],
+  "Krays": [
+    "クレイズ"
+  ],
+  "Panic Monster !n Wonderland": [
+    "パニックモンスターインワンダーランド",
+    "パニモン"
+  ],
+  "Lって何のLですか？": [
+    "エルッテナンノエルデスカ"
+  ],
+  "YumeLia": [
+    "ユメリア"
+  ],
+  "Drug&Drop": [
+    "ドラッグアンドドロップ"
+  ],
+  "I MY ME MINE": [
+    "アイマイミーマイン"
+  ],
+  "LittleSignal": [
+    "リトルシグナル"
+  ],
+  "Melty BeaR": [
+    "メルティベア"
+  ],
+  "PiRiRi": [
+    "ピリリ"
+  ],
+  "W.ダブルヴィー": [
+    "ダブルヴィー"
+  ],
+  "SAI²Rium": [
+    "サイリウム"
+  ],
+  "i-COL": [
+    "アイコル"
+  ],
+  "Rain Tree": [
+    "レインツリー"
+  ],
+  "STU48": [
+    "エスティーユーフォーティーエイト",
+    "エスティーユー"
+  ],
+  "SWEET STEADY": [
+    "スイートステディ",
+    "スイステ"
+  ],
+  "Ma'Scar' Piece": [
+    "マスカーピース",
+    "マスカピース"
+  ],
+  "LillyS/ash": [
+    "リリースラッシュ"
+  ],
+  "Falench.": [
+    "ファレンチ"
+  ],
+  "COLOR of COLOR": [
+    "カラーオブカラー"
+  ],
+  "NO FRAME": [
+    "ノーフレーム"
+  ],
+  "WASURENA": [
+    "ワスレナ"
+  ],
+  "MeIMI": [
+    "メイミ"
+  ],
+  "ネコプラpixx.": [
+    "ネコプラピックス"
+  ],
+  "iCON!": [
+    "アイコン"
+  ],
+  "Lollipop♡CHU": [
+    "ロリポップチュー"
+  ],
+  "FRESH CHARM": [
+    "フレッシュチャーム"
+  ],
+  "玉響storage": [
+    "タマユラストレージ"
+  ],
+  "Aerolipop": [
+    "エアロリポップ"
+  ],
+  "AQA": [
+    "アクア"
+  ],
+  "CURE'T": [
+    "キュアット",
+    "キュアティ"
+  ],
+  "SPRSE": [
+    "スプライズ"
+  ],
+  "2nd season Aブロック1位": [
+    "セカンドシーズンエーブロック"
+  ],
+  "2nd season Aブロック2位": [
+    "セカンドシーズンエーブロック"
+  ],
+  "2nd season A3位": [
+    "セカンドシーズンエー"
+  ],
+  "2nd season Bブロック1位": [
+    "セカンドシーズンビーブロック"
+  ],
+  "2nd season B2位": [
+    "セカンドシーズンビー"
+  ],
+  "2nd season B3位": [
+    "セカンドシーズンビー"
+  ],
+  "2nd争奪 Bブロック1位": [
+    "セカンドソウダツビーブロック"
+  ],
+  "2nd争奪 Aブロック2位": [
+    "セカンドソウダツエーブロック"
+  ],
+  "2nd争奪 A3位": [
+    "セカンドソウダツエー"
+  ],
+  "2nd争奪 B2位": [
+    "セカンドソウダツビー"
+  ],
+  "2nd争奪 B3位": [
+    "セカンドソウダツビー"
+  ]
+};
+const readingsByNormalizedName = new Map(
+  Object.entries(groupReadingAliases).map(([name, readings]) => [normalize(name), readings.map(normalize)])
+);
+const nameSearchCache = new Map();
+function searchableGroupName(group) {
+  if (nameSearchCache.has(group)) return nameSearchCache.get(group);
+  // 「BabyDoll（出演権争奪A3位）」など注記付きの名前にも同じ読みを使う。
+  const withoutQualifier = group.replace(/[（(].*$/, "");
+  const aliases = readingsByNormalizedName.get(normalize(group)) ||
+    readingsByNormalizedName.get(normalize(withoutQualifier)) || [];
+  const searchString = [normalize(group), ...aliases].join(" ");
+  nameSearchCache.set(group, searchString);
+  return searchString;
 }
 
 function render() {
@@ -1559,7 +2110,9 @@ function render() {
     if (currentStage !== "all" && (itemType !== "live" || s.stage !== currentStage)) return false;
     if (!matchedTime(s)) return false;
     if (queries.length === 0) return true;
-    const g = normalize(s.group + (s.note ? " " + s.note : "") + (s.type === "ennichi" ? " 縁日 えんにち ENNICHI" : "") + (s.heroines ? " HEROINES ヒロインズ" : ""));
+    const g = searchableGroupName(s.group) + " " +
+      normalize((s.note || "") + (s.type === "ennichi" ? " 縁日 えんにち ENNICHI" : "") +
+      (s.heroines ? " HEROINES ヒロインズ" : ""));
     return queries.some(q => g.includes(q));
   });
 

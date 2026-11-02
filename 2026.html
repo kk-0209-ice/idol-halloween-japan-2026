@@ -1,0 +1,2605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IHJ 2026 タイムテーブル検索（ライブ・特典会・縁日）</title>
+<style>
+  :root {
+    --bg: #1a0f1f;
+    --card: #2a152e;
+    --accent: #ff6b00;
+    --accent2: #c77dff;
+    --text: #f8e8d0;
+    --muted: #b8a090;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: linear-gradient(135deg, #1a0f1f 0%, #2d1b36 100%);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(90deg, #ff6b00, #c77dff);
+    color: white;
+    padding: 1.2rem 1rem;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  header p { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.9; }
+  .update-info {
+    max-width: 900px;
+    margin: 0.9rem auto 0;
+    padding: 0.55rem 1rem;
+    text-align: center;
+    color: #f8e8d0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .update-info strong { color: #ffd166; }
+  .update-info span { display: block; font-size: 0.78rem; color: #b8a090; }
+  .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+  .controls {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  .day-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .day-tabs button {
+    flex: 1;
+    min-width: 90px;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 8px;
+    background: #3a2040;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  .day-tabs button.active {
+    background: var(--accent);
+    color: white;
+  }
+  .all-day-btn {
+    width: 100%;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 8px;
+    background: #3a2040;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+  }
+  .all-day-btn.active {
+    background: var(--accent);
+    color: white;
+  }
+  input[type="search"] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    border: 2px solid #4a2a55;
+    background: #1f1025;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  input[type="search"]:focus { outline: none; border-color: var(--accent); }
+  .hint { font-size: 0.8rem; color: var(--muted); margin: 0.3rem 0 0; }
+  #results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .slot {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid var(--accent);
+    transition: transform 0.15s;
+  }
+  .slot.selected {
+    border-left-color: #c77dff;
+    background: #3a2048;
+  }
+  .slot .select-btn {
+    background: none;
+    border: none;
+    color: #ffd166;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0 0.3rem;
+  }
+  .my-schedule-header {
+    text-align: center;
+    margin: 1rem 0 0.5rem;
+    font-size: 1.1rem;
+    color: #c77dff;
+  }
+  .slot .info h3 { margin: 0 0 0.2rem; font-size: 1.1rem; }
+  .slot .info .meta { color: var(--muted); font-size: 0.9rem; }
+  .slot .time {
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: #ffd166;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .booth { background: #3a2040; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.85rem; margin-left: 0.5rem; }
+  .empty { text-align: center; padding: 2rem; color: var(--muted); }
+  .selected-count { font-size: 0.85rem; margin-top: 0.5rem; color: var(--accent2); }
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  @media (max-width: 600px) {
+    .slot { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+    .slot .time { text-align: left; }
+  }
+
+  .ennichi-info {background:#30203a;border-left:4px solid #ffd166;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.86rem;line-height:1.7;}
+  .ennichi-info small {color:#d5c1d4;}
+  .slot.ennichi-slot {border-left-color:#ffd166;}
+  /* 時間検索・重複表示（既存カードの構成を維持） */
+  .time-search { margin:0.85rem 0 0.95rem; padding:0.75rem 0.85rem; background:#241529; border:1px solid #654175; border-radius:10px; }
+  .time-search-title {font-weight:bold; color:#ffd166; margin:0 0 0.45rem;}
+  /* iPhone/Edgeでネイティブ時刻入力が横へはみ出す問題を回避。入力は数字4桁に対応。 */
+  .time-search, .time-search * { box-sizing:border-box; }
+  .time-search { min-width:0; max-width:100%; }
+  .time-search-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:0.7rem;min-width:0;max-width:100%;}
+  .time-search-fields label {display:flex;flex-direction:column;gap:0.3rem;min-width:0;max-width:100%;font-size:0.85rem;color:#d3bbd7;}
+  .time-search-fields .time-text-input {appearance:none;-webkit-appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:48px;padding:0.65rem 0.5rem;background:#1f1025;color:#f8e8d0;border:2px solid #68467c;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;text-align:center;letter-spacing:0.02em;line-height:1.3;outline-offset:2px;}
+  .time-search-fields .time-text-input:focus {border-color:#c77dff;outline:2px solid #c77dff33;}
+  .time-search-fields .time-text-input::placeholder {color:#a992ac;opacity:1;}
+  /* 直接入力を維持しつつ、OSに依存しない時間セレクターを併設する。 */
+  .time-picker-buttons {grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.55rem;min-width:0;}
+  .time-picker-open {width:100%;min-width:0;min-height:38px;border-radius:8px;border:1px solid #9471a9;background:#372541;color:#f8e8d0;padding:0.45rem 0.25rem;font-size:0.82rem;font-weight:600;cursor:pointer;}
+  .time-picker-open[aria-expanded="true"] {border-color:#ffd166;background:#4c3058;color:#ffd166;}
+  .time-picker-panel {grid-column:1/-1;min-width:0;background:#312038;border:1px solid #7f608f;border-radius:10px;padding:0.7rem;margin:0.1rem 0 0;}
+  .time-picker-panel[hidden] {display:none !important;}
+  .time-picker-heading {margin:0 0 0.55rem;color:#ffd166;font-size:0.85rem;font-weight:600;}
+  .time-picker-selects {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:0.45rem;}
+  .time-picker-selects label {display:flex;flex-direction:column;gap:0.2rem;min-width:0;color:#d3bbd7;font-size:0.78rem;}
+  .time-picker-selects select {display:block;width:100%;min-width:0;min-height:44px;padding:0.45rem 0.5rem;border-radius:8px;border:1px solid #9471a9;background:#21162b;color:#fff;font-size:16px;text-align:center;color-scheme:dark;}
+  .time-picker-sep {font-size:1.25rem;font-weight:700;padding-bottom:0.5rem;}
+  .time-picker-footer {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0.5rem;margin-top:0.65rem;}
+  .time-picker-footer button {min-width:0;min-height:42px;padding:0.45rem 0.3rem;border-radius:8px;border:1px solid #8e63a8;background:#3a2040;color:#f8e8d0;font-size:0.85rem;cursor:pointer;}
+  #pickerApply {background:#a95be0;color:#fff;font-weight:700;border-color:#a95be0;}
+  .time-actions {grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.55rem;align-items:center;min-width:0;}
+  .time-clear-btn {width:100%;min-width:0;min-height:42px;border:1px solid #7f608f;border-radius:8px;background:#3a2040;color:#f8e8d0;padding:0.5rem 0.3rem;cursor:pointer;font-size:0.8rem;}
+  .time-reset-btn {background:#503064;border-color:#8e63a8;}
+  .time-help {margin:0.45rem 0 0;font-size:0.77rem;color:#c2a9cc;}
+  .time-search-status {margin:0.45rem 0 0;font-size:0.78rem;color:#d5b9d7;}
+  .time-search-status.error {color:#ffb7b7;}
+  .overlap-shortcut {background:none;border:0;padding:0;margin-top:0.3rem;color:#d4aaff;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-size:0.8rem;text-align:left;}
+  .collision-hint {color:#ffbd96;font-size:0.8rem;line-height:1.5;margin-top:0.35rem;}
+  .conflict-panel {background:#321e36;border:1px solid #a85f56;border-left:4px solid #ff9b73;border-radius:10px;padding:0.85rem;margin:0.65rem 0 1rem;line-height:1.55;}
+  .conflict-panel.no-conflict {border-color:#62537b;border-left-color:#c77dff;}
+  .conflict-panel strong {color:#ffd166;}
+  .conflict-pair {background:#281a32;border-radius:7px;padding:0.55rem 0.65rem;margin:0.45rem 0;font-size:0.87rem;}
+  .conflict-meta {color:#ffcf9d;font-weight:bold;font-size:0.8rem;margin-bottom:0.18rem;}
+  .conflict-mark {display:inline-block;font-size:0.8rem;color:#ffbd96;font-weight:bold;}
+  .my-event {border-left:3px solid transparent;}
+  .my-event.has-conflict {border-left-color:#ff9b73;}
+  .controls {scroll-margin-top:100px;}
+  @media (max-width:600px) {.time-search {padding:0.75rem;} .time-search-fields {gap:0.55rem;} .time-search-fields .time-text-input {padding:0.65rem 0.3rem;} .slot .info {max-width:100%;} .slot .slot-time-actions {width:100%;justify-content:flex-end;} }
+  /* ステージ別検索：既存の種類・時間フィルターと独立して利用可能 */
+  .stage-filter {margin:0.65rem 0 0.95rem;padding:0.8rem 0.85rem;background:#241529;border:1px solid #654175;border-radius:10px;min-width:0;}
+  .stage-filter[hidden] {display:none !important;}
+  .stage-filter-title {font-size:0.95rem;font-weight:700;color:#ffd166;margin:0 0 0.55rem;}
+  .stage-filter-buttons {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.45rem;}
+  .stage-filter-buttons button {display:block;width:100%;min-width:0;min-height:42px;padding:0.48rem 0.25rem;border:1px solid #765186;border-radius:8px;background:#3a2040;color:var(--text);font-size:0.81rem;font-weight:700;cursor:pointer;line-height:1.3;}
+  .stage-filter-buttons button.active {background:#a95be0;border-color:#c77dff;color:#fff;}
+  .stage-filter-buttons button:focus-visible {outline:2px solid #ffd166;outline-offset:2px;}
+  .stage-filter-buttons .stage-all {grid-column:1/-1;}
+  .stage-filter-help {font-size:0.78rem;color:#d3bbd7;line-height:1.5;margin:0.5rem 0 0;}
+  @media(max-width:600px) {.stage-filter-buttons {grid-template-columns:repeat(2,minmax(0,1fr));}.stage-filter {padding:0.75rem;}}
+  /* iLiFE!注意事項は開くまで高さを取らず、カードのレイアウトを維持 */
+  .ilife-note { margin: -0.25rem 0 0.55rem; padding: 0.55rem 0.75rem; background:#291b37; border:1px solid #654175; border-radius:8px; font-size:0.85rem; line-height:1.65; }
+  .ilife-note summary { color:#ffd166; font-weight:bold; cursor:pointer; }
+  .ilife-note-content { padding-top:0.65rem; }
+  .ilife-note-content p { margin:0.3rem 0; }
+  .ilife-note-content a { color:#d8adff; overflow-wrap:anywhere; }
+  .ilife-note-content .important { color:#ffd166; font-weight:bold; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎃 IDOL HALLOWEEN JAPAN 2026 タイムテーブル検索</h1>
+  <p>ライブステージ ＋ 特典会（2Fコンコース） ＋ 縁日</p>
+</header>
+<div class="update-info" role="note">
+  <strong>📅 掲載情報：2026年10月29日更新（DAY1ライブ・縁日追加／HEROINES特典会ブース案内更新）</strong>
+  <span>スケジュールが変更になる場合があります。最新の公式発表をご確認ください。</span>
+</div>
+<div class="notice" style="background:#3a2040; border-left:5px solid #c77dff; margin:1rem auto; max-width:900px; padding:0.9rem 1.2rem; border-radius:8px; font-size:0.9rem;">
+  <strong>📌 HEROINESの特典会について</strong><br>
+  DAY1〜DAY3のHEROINES特典会を反映しました。<br>
+  <strong>⚠️ 特典会ブース案内が変更されました。</strong> 新タイテは「27〜30」と一括表記され、各グループの個別ブース番号は記載されていません。現地案内・公式発表をご確認ください。<br>
+  <strong>実施時間の変更はありません。</strong>「HEROINES」「ヒロインズ」でまとめて検索できます。「前特典会」の注記は維持しています。
+</div>
+<div style="text-align:center; margin:1rem auto; max-width:900px;">
+  <img src="venue_map.jpg" alt="会場マップ" style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+</div>
+<div class="container">
+  <div class="ennichi-info" role="note">🎯 <strong>縁日タイムテーブル追加</strong>：ウィザード輪投げ・スパイダー輪投げ・ボディシール＆ペイント（1回2,000円）。縁日のブース番号は専用の1〜20です。<br><small>「イベントなし」「シール渡しのみ」の記載がある枠は、画像の注意書きに合わせて表示しています。</small></div>
+  <div class="controls">
+    <div class="day-tabs">
+      <button data-day="1">DAY1 10/30</button>
+      <button data-day="2">DAY2 10/31</button>
+      <button data-day="3">DAY3 11/01</button>
+    </div>
+    <button class="all-day-btn active" data-day="all">全日程</button>
+    <div class="day-tabs">
+      <button class="active" data-type="all">すべて</button>
+      <button data-type="live">ライブ</button>
+      <button data-type="tokuten">特典会</button>
+      <button data-type="ennichi">🎯縁日</button>
+    </div>
+    <div id="stageFilter" class="stage-filter" aria-label="ライブステージで絞り込む">
+      <p class="stage-filter-title">🎤 ステージ別に検索</p>
+      <div class="stage-filter-buttons" role="group" aria-label="ステージを選択">
+        <button type="button" class="stage-all active" data-stage="all" aria-pressed="true">全ステージ</button>
+        <button type="button" data-stage="PUMPKIN" aria-pressed="false">PUMPKIN</button>
+        <button type="button" data-stage="VAMPIRE" aria-pressed="false">VAMPIRE</button>
+        <button type="button" data-stage="GHOST" aria-pressed="false">GHOST</button>
+        <button type="button" data-stage="WITCH" aria-pressed="false">WITCH</button>
+        <button type="button" data-stage="SPIDER" aria-pressed="false">SPIDER</button>
+        <button type="button" data-stage="CANDY" aria-pressed="false">CANDY</button>
+      </div>
+      <p class="stage-filter-help">ステージを選ぶと、そのライブだけを表示します。日程・グループ名・時間帯と組み合わせて検索できます。</p>
+    </div>
+    <input type="search" id="search" placeholder="グループ名・読みを入力（例: ワンフォニー、Rain Tree）" autofocus>
+    <p class="hint">英語名も日本語の読みで検索できます（例：ワンフォニー、レインツリー）。ひらがな・カタカナ対応。複数グループはスペース区切りで検索できます。</p>
+    <div class="time-search" aria-labelledby="timeSearchTitle">
+      <p class="time-search-title" id="timeSearchTitle">🕒 時間で検索・被りを確認</p>
+      <div class="time-search-fields">
+        <label for="timeFrom">開始時刻<input id="timeFrom" class="time-text-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" spellcheck="false" maxlength="5" pattern="(?:[0-9]{3,4}|[0-9]{1,2}:[0-9]{1,2}|[0-9]{1,2})" placeholder="例 1400" aria-label="時間検索の開始時刻（4桁の数字でも入力可）"></label>
+        <label for="timeTo">終了時刻<input id="timeTo" class="time-text-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" spellcheck="false" maxlength="5" pattern="(?:[0-9]{3,4}|[0-9]{1,2}:[0-9]{1,2}|[0-9]{1,2})" placeholder="例 1530" aria-label="時間検索の終了時刻（4桁の数字でも入力可）"></label>
+        <div class="time-picker-buttons">
+          <button type="button" id="pickTimeFrom" class="time-picker-open" aria-expanded="false" aria-controls="timePickerPanel">🕒 開始時刻を選択</button>
+          <button type="button" id="pickTimeTo" class="time-picker-open" aria-expanded="false" aria-controls="timePickerPanel">🕒 終了時刻を選択</button>
+        </div>
+        <div id="timePickerPanel" class="time-picker-panel" hidden>
+          <p id="timePickerHeading" class="time-picker-heading">開始時刻を選択</p>
+          <div class="time-picker-selects">
+            <label for="pickerHour">時<select id="pickerHour" aria-label="時を選択"></select></label>
+            <span class="time-picker-sep" aria-hidden="true">:</span>
+            <label for="pickerMinute">分<select id="pickerMinute" aria-label="分を選択"></select></label>
+          </div>
+          <div class="time-picker-footer">
+            <button type="button" id="pickerApply">この時刻に設定</button>
+            <button type="button" id="pickerClose">閉じる</button>
+          </div>
+        </div>
+        <div class="time-actions">
+          <button type="button" id="timeResetBtn" class="time-clear-btn time-reset-btn">開催時間に戻す</button>
+          <button type="button" id="timeClearBtn" class="time-clear-btn">時間指定を解除</button>
+        </div>
+      </div>
+      <p class="time-help">時刻をタップして数字4桁以内で入力（例：1400→14:00）。「14:00」形式も使えます。不正な文字は空欄に戻ります。「時刻を選択」から時・分も選べます。</p>
+      <p id="timeSearchStatus" class="time-search-status" role="status"></p>
+    </div>
+    <div style="display:flex; gap:0.5rem; margin-top:0.8rem; flex-wrap:wrap;">
+      <button id="myScheduleBtn" style="padding:0.6rem 1rem; background:#c77dff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">★ マイスケジュールを見る</button>
+      <button id="clearSelectedBtn" style="padding:0.6rem 1rem; background:#3a2040; color:var(--text); border:none; border-radius:8px; cursor:pointer;">選択をクリア</button>
+    </div>
+    <div class="selected-count" id="count"></div>
+  </div>
+  <div id="results"></div>
+</div>
+<footer>
+  会場：埼玉スタジアム2002 野外特設会場｜特典会：2Fコンコース｜縁日：専用ブース1〜20（1回2,000円）<br>
+  ※DAY1〜DAY3のライブ・特典会・縁日（HEROINES追加分を含む）を掲載画像に基づいて更新しています。変更の可能性があるため公式発表もご確認ください。
+</footer>
+
+<script>
+const schedule = [
+  // DAY1 特典会（2026年画像との照合版）
+  {day:1, type:"tokuten", booth:1, group:"ジエメイ", start:"14:05", end:"15:15"},
+  {day:1, type:"tokuten", booth:1, group:"FES☆TIVE", start:"15:25", end:"16:35"},
+  {day:1, type:"tokuten", booth:1, group:"log you", start:"18:30", end:"19:40"},
+  {day:1, type:"tokuten", booth:2, group:"REIRIE", start:"14:30", end:"15:40"},
+  {day:1, type:"tokuten", booth:2, group:"UtaGe!", start:"15:50", end:"17:00"},
+  {day:1, type:"tokuten", booth:2, group:"Onephony", start:"19:00", end:"20:10"},
+  {day:1, type:"tokuten", booth:3, group:"KAWAII LAB. MATES", start:"13:35", end:"14:45"},
+  {day:1, type:"tokuten", booth:3, group:"Toi Toi Toi", start:"14:55", end:"16:05"},
+  {day:1, type:"tokuten", booth:3, group:"ドラマチックレコード", start:"16:15", end:"17:25"},
+  {day:1, type:"tokuten", booth:3, group:"fav me", start:"17:35", end:"18:45"},
+  {day:1, type:"tokuten", booth:4, group:"アルテミスの翼", start:"18:20", end:"19:30"},
+  {day:1, type:"tokuten", booth:5, group:"アキシブproject", start:"12:50", end:"14:00"},
+  {day:1, type:"tokuten", booth:5, group:"NANIMONO", start:"14:10", end:"15:20"},
+  {day:1, type:"tokuten", booth:5, group:"可憐なアイボリー", start:"15:30", end:"16:40"},
+  {day:1, type:"tokuten", booth:5, group:"Palette Parade", start:"16:55", end:"18:05"},
+  {day:1, type:"tokuten", booth:6, group:"アンスリューム", start:"14:35", end:"15:45"},
+  {day:1, type:"tokuten", booth:6, group:"ラナキュラ", start:"15:55", end:"17:05"},
+  {day:1, type:"tokuten", booth:6, group:"LinQ", start:"17:20", end:"18:30"},
+  {day:1, type:"tokuten", booth:6, group:"SEKAIE☆", start:"19:05", end:"20:15"},
+  {day:1, type:"tokuten", booth:7, group:"パラディーク", start:"15:00", end:"16:10"},
+  {day:1, type:"tokuten", booth:7, group:"山﨑夢羽", start:"16:20", end:"17:30"},
+  {day:1, type:"tokuten", booth:7, group:"君と見るそら", start:"19:35", end:"20:45"},
+  {day:1, type:"tokuten", booth:8, group:"chuLa", start:"17:30", end:"18:40"},
+  {day:1, type:"tokuten", booth:9, group:"まねきケチャ", start:"12:50", end:"14:00"},
+  {day:1, type:"tokuten", booth:9, group:"α+", start:"14:10", end:"15:20"},
+  {day:1, type:"tokuten", booth:9, group:"BNSI", start:"16:55", end:"18:05"},
+  {day:1, type:"tokuten", booth:10, group:"なんキニ！", start:"13:15", end:"14:25"},
+  {day:1, type:"tokuten", booth:10, group:"selfish", start:"17:20", end:"18:30"},
+  {day:1, type:"tokuten", booth:10, group:"HIBANA", start:"18:40", end:"19:50"},
+  {day:1, type:"tokuten", booth:11, group:"FULIT BOX", start:"13:40", end:"14:50"},
+  {day:1, type:"tokuten", booth:11, group:"江籠裕奈", start:"15:00", end:"16:10"},
+  {day:1, type:"tokuten", booth:11, group:"点染テンセイ少女。", start:"17:45", end:"18:55"},
+  {day:1, type:"tokuten", booth:11, group:"feelNEO", start:"19:05", end:"20:15"},
+  {day:1, type:"tokuten", booth:12, group:"HzMe", start:"16:10", end:"17:20"},
+  {day:1, type:"tokuten", booth:12, group:"hakanai", start:"17:30", end:"18:40"},
+  {day:1, type:"tokuten", booth:12, group:"こみっきゅおん！", start:"19:35", end:"20:45"},
+  {day:1, type:"tokuten", booth:13, group:"メイビーME", start:"12:50", end:"14:00"},
+  {day:1, type:"tokuten", booth:13, group:"Malcolm Mask McLaren", start:"14:10", end:"15:20"},
+  {day:1, type:"tokuten", booth:13, group:"metarium", start:"15:30", end:"16:40"},
+  {day:1, type:"tokuten", booth:13, group:"アップアップガールズ（仮）", start:"16:55", end:"18:05"},
+  {day:1, type:"tokuten", booth:13, group:"ちゃーむぽっしゅ", start:"18:15", end:"19:25"},
+  {day:1, type:"tokuten", booth:14, group:"Ma'Scar'Piece", start:"14:35", end:"15:45"},
+  {day:1, type:"tokuten", booth:14, group:"コングラッチェ！", start:"15:55", end:"17:05"},
+  {day:1, type:"tokuten", booth:14, group:"RAVIDAVI", start:"17:20", end:"18:30"},
+  {day:1, type:"tokuten", booth:15, group:"びっくえんじぇる", start:"13:40", end:"14:50"},
+  {day:1, type:"tokuten", booth:15, group:"HelloYouth", start:"15:00", end:"16:10"},
+  {day:1, type:"tokuten", booth:15, group:"Chuu♡Cute", start:"16:20", end:"17:30"},
+  {day:1, type:"tokuten", booth:16, group:"Lily S/ash", start:"16:10", end:"17:20"},
+  {day:1, type:"tokuten", booth:16, group:"キングサリ", start:"17:30", end:"18:40"},
+  {day:1, type:"tokuten", booth:17, group:"AOSTARIA", start:"12:50", end:"14:00"},
+  {day:1, type:"tokuten", booth:17, group:"エイアイカ", start:"14:15", end:"15:25"},
+  {day:1, type:"tokuten", booth:17, group:"Maison de Queen", start:"15:40", end:"16:50"},
+  {day:1, type:"tokuten", booth:17, group:"RePLAY", start:"17:15", end:"18:25"},
+  {day:1, type:"tokuten", booth:18, group:"山﨑夢羽", start:"13:10", end:"14:20"},
+  {day:1, type:"tokuten", booth:18, group:"KissBee", start:"14:35", end:"15:45"},
+  {day:1, type:"tokuten", booth:18, group:"MEOWMEW", start:"16:00", end:"17:10"},
+  {day:1, type:"tokuten", booth:18, group:"XINXIN", start:"17:35", end:"18:45"},
+  {day:1, type:"tokuten", booth:18, group:"フルコース", start:"19:00", end:"20:10"},
+  {day:1, type:"tokuten", booth:19, group:"Lily scale", start:"13:30", end:"14:40"},
+  {day:1, type:"tokuten", booth:19, group:"紅色の飛行少女", start:"16:20", end:"17:30"},
+  {day:1, type:"tokuten", booth:19, group:"PIAGRIM", start:"17:55", end:"19:05"},
+  {day:1, type:"tokuten", booth:19, group:"グットクルー", start:"19:20", end:"20:30"},
+  {day:1, type:"tokuten", booth:20, group:"LIE LILLIE", start:"13:50", end:"15:00"},
+  {day:1, type:"tokuten", booth:20, group:"SAISON", start:"15:15", end:"16:25"},
+  {day:1, type:"tokuten", booth:20, group:"Aivery", start:"16:40", end:"17:50"},
+  {day:1, type:"tokuten", booth:20, group:"buGG", start:"18:15", end:"19:25"},
+  {day:1, type:"tokuten", booth:21, group:"KAMAITACI", start:"15:15", end:"16:25"},
+  {day:1, type:"tokuten", booth:21, group:"STARRY×NIGHT↗", start:"16:30", end:"17:40"},
+  {day:1, type:"tokuten", booth:21, group:"unFinale Tokyo", start:"17:45", end:"18:55"},
+  {day:1, type:"tokuten", booth:22, group:"Secret Pinky", start:"12:55", end:"14:05"},
+  {day:1, type:"tokuten", booth:22, group:"ぶっとび！パンデミック", start:"14:15", end:"15:20"},
+  {day:1, type:"tokuten", booth:22, group:"セカンドステージ争奪戦 第1ブロック 配信7位", start:"15:40", end:"16:50"},
+  {day:1, type:"tokuten", booth:22, group:"セカンドステージ争奪戦 第1ブロック 配信5位", start:"17:15", end:"18:25"},
+  {day:1, type:"tokuten", booth:22, group:"セカンドステージ争奪戦 第1ブロック 配信3位", start:"18:40", end:"19:50"},
+  {day:1, type:"tokuten", booth:23, group:"ルシフェルの園。", start:"13:15", end:"14:25"},
+  {day:1, type:"tokuten", booth:23, group:"ラビットビット", start:"14:35", end:"15:45"},
+  {day:1, type:"tokuten", booth:23, group:"セカンドステージ争奪戦 第2ブロック 配信7位", start:"16:00", end:"17:10"},
+  {day:1, type:"tokuten", booth:23, group:"セカンドステージ争奪戦 第2ブロック 配信5位", start:"17:35", end:"18:45"},
+  {day:1, type:"tokuten", booth:23, group:"セカンドステージ争奪戦 第2ブロック 配信3位", start:"19:00", end:"20:10"},
+  {day:1, type:"tokuten", booth:24, group:"踊れ！神風", start:"13:35", end:"14:45"},
+  {day:1, type:"tokuten", booth:24, group:"セカンドステージ争奪戦 第1ブロック 配信8位", start:"14:55", end:"16:05"},
+  {day:1, type:"tokuten", booth:24, group:"セカンドステージ争奪戦 第1ブロック 配信6位", start:"16:20", end:"17:30"},
+  {day:1, type:"tokuten", booth:24, group:"セカンドステージ争奪戦 第1ブロック 配信4位", start:"17:55", end:"19:05"},
+  {day:1, type:"tokuten", booth:24, group:"セカンドステージ争奪戦 第1ブロック 配信2位", start:"19:20", end:"20:30"},
+  {day:1, type:"tokuten", booth:25, group:"As a Cutie Pomeranian", start:"13:55", end:"15:05"},
+  {day:1, type:"tokuten", booth:25, group:"セカンドステージ争奪戦 第2ブロック 配信8位", start:"15:15", end:"16:25"},
+  {day:1, type:"tokuten", booth:25, group:"セカンドステージ争奪戦 第2ブロック 配信6位", start:"16:40", end:"17:50"},
+  {day:1, type:"tokuten", booth:25, group:"セカンドステージ争奪戦 第2ブロック 配信4位", start:"18:15", end:"19:25"},
+  {day:1, type:"tokuten", booth:25, group:"セカンドステージ争奪戦 第2ブロック 配信2位", start:"19:45", end:"20:55"},
+  {day:1, type:"tokuten", booth:26, group:"セカンドステージ争奪戦 第1ブロック 配信7位", start:"16:10", end:"17:20"},
+  {day:1, type:"tokuten", booth:26, group:"セカンドステージ争奪戦 第2ブロック 配信1位", start:"17:35", end:"18:45"},
+  {day:1, type:"tokuten", booth:26, group:"昼夜逆転", start:"18:20", end:"19:30"},
+  // DAY1 HEROINES関連特典会：新公開タイテ画像（2026年10月28日受領分）
+  {day:1, type:"tokuten", booth:"27〜30", group:"iMIN!", start:"13:10", end:"14:10", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"Pastel Closet", start:"13:15", end:"14:15", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ポンコツコンポ", start:"13:15", end:"14:15", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"テンシンランマン", start:"13:40", end:"14:40", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ラストシーン", start:"14:35", end:"15:35", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"パラレルサイダー", start:"14:50", end:"15:50", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ハルカエコー", start:"15:30", end:"16:30", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"MEGAFON", start:"15:50", end:"16:50", heroines:true, note:"前特典会"},
+  {day:1, type:"tokuten", booth:"27〜30", group:"III", start:"16:00", end:"17:00", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"AdamLilith", start:"16:20", end:"17:20", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ウメコマチ", start:"16:40", end:"17:40", heroines:true, note:"前特典会"},
+  {day:1, type:"tokuten", booth:"27〜30", group:"TENRIN", start:"16:55", end:"17:55", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ドレスコード", start:"17:25", end:"18:25", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"LADYBABY", start:"17:45", end:"18:45", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生", start:"17:45", end:"18:45", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ガガピエロ", start:"18:15", end:"19:15", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"夜光性アミューズ", start:"18:15", end:"19:15", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生大阪", start:"18:30", end:"19:30", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"iON!", start:"18:40", end:"19:40", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"なう♡すとれーじ", start:"18:45", end:"19:45", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ZUTTOMOTTO", start:"19:05", end:"20:05", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"ナナコロビヤオキ", start:"19:30", end:"20:30", heroines:true},
+  {day:1, type:"tokuten", booth:"27〜30", group:"CAL&RES", start:"19:30", end:"20:30", heroines:true},
+
+  // DAY2 特典会（2026年画像との照合版）
+  {day:2, type:"tokuten", booth:1, group:"アンスリューム", start:"11:45", end:"12:55"},
+  {day:2, type:"tokuten", booth:1, group:"chuLa", start:"14:35", end:"15:25"},
+  {day:2, type:"tokuten", booth:1, group:"ラフ×ラフ", start:"16:10", end:"17:20"},
+  {day:2, type:"tokuten", booth:2, group:"なみだ色の消しごむ", start:"12:10", end:"13:20"},
+  {day:2, type:"tokuten", booth:2, group:"INUWASI", start:"13:35", end:"14:45"},
+  {day:2, type:"tokuten", booth:2, group:"ハルニシオン", start:"15:10", end:"16:20"},
+  {day:2, type:"tokuten", booth:2, group:"Appare!", start:"17:20", end:"18:30"},
+  {day:2, type:"tokuten", booth:2, group:"NEO JAPONISM", start:"18:55", end:"20:05"},
+  {day:2, type:"tokuten", booth:3, group:"衛星とカラテア", start:"12:35", end:"13:45"},
+  {day:2, type:"tokuten", booth:3, group:"JamsCollection", start:"15:40", end:"16:50"},
+  {day:2, type:"tokuten", booth:4, group:"虹のコンキスタドール", start:"13:30", end:"15:00"},
+  {day:2, type:"tokuten", booth:5, group:"AOAO", start:"14:30", end:"15:40"},
+  {day:2, type:"tokuten", booth:5, group:"KAWAII LAB. MATES", start:"16:20", end:"17:30"},
+  {day:2, type:"tokuten", booth:5, group:"myojou", start:"17:40", end:"18:50"},
+  {day:2, type:"tokuten", booth:5, group:"THE ENCORE", start:"19:00", end:"20:10"},
+  {day:2, type:"tokuten", booth:6, group:"フルコース", start:"13:35", end:"14:45"},
+  {day:2, type:"tokuten", booth:6, group:"2nd争奪 Aブロック1位", start:"16:45", end:"17:55"},
+  {day:2, type:"tokuten", booth:6, group:"マリークラウン", start:"18:05", end:"19:15"},
+  {day:2, type:"tokuten", booth:7, group:"#Mooove!", start:"12:40", end:"13:50"},
+  {day:2, type:"tokuten", booth:7, group:"こみっきゅおん！", start:"14:00", end:"15:10"},
+  {day:2, type:"tokuten", booth:7, group:"NEVER END ROLL", start:"15:55", end:"17:05"},
+  {day:2, type:"tokuten", booth:7, group:"Tohkei", start:"17:15", end:"18:25"},
+  {day:2, type:"tokuten", booth:8, group:"Onephony", start:"12:00", end:"13:10"},
+  {day:2, type:"tokuten", booth:8, group:"feelNEO", start:"15:20", end:"16:30"},
+  {day:2, type:"tokuten", booth:8, group:"ドラマチックレコード", start:"16:50", end:"18:00"},
+  {day:2, type:"tokuten", booth:9, group:"グットクルー", start:"13:10", end:"14:20"},
+  {day:2, type:"tokuten", booth:9, group:"山﨑夢羽", start:"14:30", end:"15:40"},
+  {day:2, type:"tokuten", booth:9, group:"可憐なアイボリー", start:"17:15", end:"18:25"},
+  {day:2, type:"tokuten", booth:10, group:"HelloYouth", start:"12:15", end:"13:25"},
+  {day:2, type:"tokuten", booth:10, group:"ラナキュラ", start:"13:35", end:"14:45"},
+  {day:2, type:"tokuten", booth:10, group:"amini", start:"14:55", end:"16:05"},
+  {day:2, type:"tokuten", booth:10, group:"すべての瞬間は君だった。", start:"17:40", end:"18:50"},
+  {day:2, type:"tokuten", booth:11, group:"SEKAIE☆", start:"12:40", end:"13:50"},
+  {day:2, type:"tokuten", booth:11, group:"MyDearDarlin'", start:"14:00", end:"15:10"},
+  {day:2, type:"tokuten", booth:11, group:"キングサリ", start:"15:20", end:"16:30"},
+  {day:2, type:"tokuten", booth:11, group:"かすみ草とステラ", start:"18:05", end:"19:15"},
+  {day:2, type:"tokuten", booth:12, group:"STAiNY", start:"15:10", end:"16:20"},
+  {day:2, type:"tokuten", booth:12, group:"RiNCENT♯", start:"16:30", end:"17:40"},
+  {day:2, type:"tokuten", booth:12, group:"ChumToto", start:"18:35", end:"19:45"},
+  {day:2, type:"tokuten", booth:13, group:"himawari(船橋)", start:"11:50", end:"13:00"},
+  {day:2, type:"tokuten", booth:13, group:"Lv.♡Charm", start:"13:10", end:"14:20"},
+  {day:2, type:"tokuten", booth:13, group:"パラディーク", start:"14:30", end:"15:40"},
+  {day:2, type:"tokuten", booth:13, group:"マジカル・パンチライン", start:"15:55", end:"17:05"},
+  {day:2, type:"tokuten", booth:14, group:"Märmi", start:"12:15", end:"13:25"},
+  {day:2, type:"tokuten", booth:14, group:"α+", start:"14:55", end:"16:05"},
+  {day:2, type:"tokuten", booth:14, group:"MAGICAL SPEC", start:"16:20", end:"17:30"},
+  {day:2, type:"tokuten", booth:15, group:"シンデレラ宣言！", start:"14:00", end:"15:10"},
+  {day:2, type:"tokuten", booth:15, group:"虜なるプレリュード", start:"17:45", end:"18:55"},
+  {day:2, type:"tokuten", booth:16, group:"ワガママなラストノート", start:"15:10", end:"16:20"},
+  {day:2, type:"tokuten", booth:16, group:"フューチャーサイダー", start:"16:30", end:"17:40"},
+  {day:2, type:"tokuten", booth:16, group:"#よーよーよー", start:"18:35", end:"19:45"},
+  {day:2, type:"tokuten", booth:17, group:"Bunny La Crew", start:"11:50", end:"13:00"},
+  {day:2, type:"tokuten", booth:17, group:"2nd争奪 Aブロック2位", start:"13:15", end:"14:25"},
+  {day:2, type:"tokuten", booth:17, group:"メイビーME", start:"14:40", end:"15:50"},
+  {day:2, type:"tokuten", booth:17, group:"Malcolm Mask McLaren", start:"16:15", end:"17:25"},
+  {day:2, type:"tokuten", booth:18, group:"LOVE CHANT", start:"12:10", end:"13:20"},
+  {day:2, type:"tokuten", booth:18, group:"My Dresscode", start:"13:35", end:"14:45"},
+  {day:2, type:"tokuten", booth:18, group:"ON THE AIR", start:"15:00", end:"16:10"},
+  {day:2, type:"tokuten", booth:19, group:"月とソーダ", start:"12:30", end:"13:40"},
+  {day:2, type:"tokuten", booth:19, group:"いつかの夜に僕たちが、", start:"13:55", end:"15:05"},
+  {day:2, type:"tokuten", booth:19, group:"ちゃーむぽっしゅ", start:"15:20", end:"16:30"},
+  {day:2, type:"tokuten", booth:19, group:"PIAGRIM", start:"16:55", end:"18:05"},
+  {day:2, type:"tokuten", booth:19, group:"すてねこキャッツ", start:"18:20", end:"19:30"},
+  {day:2, type:"tokuten", booth:20, group:"シュレーディンガーの犬", start:"12:50", end:"14:00"},
+  {day:2, type:"tokuten", booth:20, group:"太陽と踊れ月夜に唄え", start:"14:15", end:"15:25"},
+  {day:2, type:"tokuten", booth:20, group:"なんキニ！", start:"18:45", end:"19:55"},
+  {day:2, type:"tokuten", booth:21, group:"アキシブproject", start:"15:10", end:"16:20"},
+  {day:2, type:"tokuten", booth:21, group:"まねきケチャ", start:"16:35", end:"17:45"},
+  {day:2, type:"tokuten", booth:22, group:"有頂天メリー", start:"11:45", end:"12:55"},
+  {day:2, type:"tokuten", booth:22, group:"SUPER JYAPON", start:"13:05", end:"14:15"},
+  {day:2, type:"tokuten", booth:22, group:"BANKURUWASE!!", start:"14:20", end:"15:30"},
+  {day:2, type:"tokuten", booth:22, group:"すてねこキャッツ", start:"15:45", end:"16:55"},
+  {day:2, type:"tokuten", booth:22, group:"君のメインヒロイン", start:"17:05", end:"18:15"},
+  {day:2, type:"tokuten", booth:22, group:"Secret Pinky", start:"18:45", end:"19:55"},
+  {day:2, type:"tokuten", booth:23, group:"にっぽん！真骨頂", start:"12:05", end:"13:15"},
+  {day:2, type:"tokuten", booth:23, group:"わんふぁす！", start:"13:25", end:"14:35"},
+  {day:2, type:"tokuten", booth:23, group:"ParaLulu", start:"14:45", end:"15:55"},
+  {day:2, type:"tokuten", booth:23, group:"2nd争奪 A3位", start:"16:00", end:"17:10"},
+  {day:2, type:"tokuten", booth:23, group:"ON THE AIR", start:"17:40", end:"18:50"},
+  {day:2, type:"tokuten", booth:24, group:"トウトイナ。", start:"12:25", end:"13:35"},
+  {day:2, type:"tokuten", booth:24, group:"BUNGEE GUM.", start:"13:45", end:"14:55"},
+  {day:2, type:"tokuten", booth:24, group:"月とソーダ", start:"15:05", end:"16:15"},
+  {day:2, type:"tokuten", booth:24, group:"&CUTE", start:"16:35", end:"17:45"},
+  {day:2, type:"tokuten", booth:24, group:"My Dresscode", start:"18:00", end:"19:10"},
+  {day:2, type:"tokuten", booth:25, group:"BabyDoll", start:"12:40", end:"13:50"},
+  {day:2, type:"tokuten", booth:25, group:"アイテムはてるてるのみ", start:"14:05", end:"15:15"},
+  {day:2, type:"tokuten", booth:25, group:"ベンジャス！", start:"15:25", end:"16:35"},
+  {day:2, type:"tokuten", booth:25, group:"LOVE CHANT", start:"16:55", end:"18:05"},
+  {day:2, type:"tokuten", booth:25, group:"きゅんﾀﾋに一生を!?", start:"18:25", end:"19:35"},
+  {day:2, type:"tokuten", booth:26, group:"強がりセンセーション", start:"15:10", end:"16:20"},
+  {day:2, type:"tokuten", booth:26, group:"びっくえんじぇる", start:"16:35", end:"17:45"},
+  // DAY2 HEROINES関連特典会：新公開タイテ画像（2026年10月28日受領分）
+  {day:2, type:"tokuten", booth:"27〜30", group:"ポンコツコンポ", start:"11:00", end:"11:40", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ラストシーン", start:"11:50", end:"12:50", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生", start:"11:50", end:"12:50", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ハルカエコー", start:"12:10", end:"13:10", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"なう♡すとれーじ", start:"12:40", end:"13:40", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ガガピエロ", start:"12:40", end:"13:50", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ナナコロビヤオキ", start:"13:00", end:"14:00", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ポンコツコンポ", start:"13:10", end:"14:10", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"Pastel Closet", start:"13:30", end:"14:30", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生大阪", start:"14:10", end:"15:10", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"CAL&RES", start:"14:10", end:"15:10", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"GILTY×GILTY", start:"14:10", end:"15:10", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"MEGAFON", start:"15:20", end:"16:20", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ドレスコード", start:"15:20", end:"16:20", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"iON!", start:"15:20", end:"16:20", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ZUTTOMOTTO", start:"15:40", end:"16:50", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"AdamLilith", start:"16:20", end:"17:20", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"TENRIN", start:"16:55", end:"17:55", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"iLiFE!", start:"17:00", end:"18:00", heroines:true, note:"前特典会"},
+  {day:2, type:"tokuten", booth:"27〜30", group:"ウメコマチ", start:"17:20", end:"18:20", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"テンシンランマン", start:"17:40", end:"18:40", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"LADYBABY", start:"18:00", end:"19:10", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"パラレルサイダー", start:"18:20", end:"19:20", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"夜光性アミューズ", start:"18:25", end:"19:25", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"のんふぃく！", start:"18:30", end:"19:30", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"III", start:"18:50", end:"19:50", heroines:true},
+  {day:2, type:"tokuten", booth:"27〜30", group:"iMIN!", start:"19:20", end:"20:20", heroines:true},
+
+  // DAY3 特典会（2026年画像との照合版）
+  {day:3, type:"tokuten", booth:1, group:"KAWAII LAB. SOUTH", start:"13:25", end:"14:35"},
+  {day:3, type:"tokuten", booth:1, group:"ZOCX", start:"15:20", end:"16:30"},
+  {day:3, type:"tokuten", booth:1, group:"MORE STAR", start:"18:40", end:"19:50"},
+  {day:3, type:"tokuten", booth:2, group:"Merry BAD TUNE.", start:"12:20", end:"13:30"},
+  {day:3, type:"tokuten", booth:2, group:"ばってん少女隊", start:"17:35", end:"18:45"},
+  {day:3, type:"tokuten", booth:3, group:"AVAM", start:"12:50", end:"14:00"},
+  {day:3, type:"tokuten", booth:3, group:"@onefive", start:"16:35", end:"17:45"},
+  {day:3, type:"tokuten", booth:3, group:"高嶺のなでしこ", start:"18:10", end:"19:20"},
+  {day:3, type:"tokuten", booth:4, group:"メインステージ争奪戦1位", start:"15:35", end:"16:45"},
+  {day:3, type:"tokuten", booth:5, group:"INUWASI", start:"11:50", end:"13:00"},
+  {day:3, type:"tokuten", booth:5, group:"OS☆U", start:"13:10", end:"14:20"},
+  {day:3, type:"tokuten", booth:5, group:"アキシブproject", start:"14:30", end:"15:40"},
+  {day:3, type:"tokuten", booth:5, group:"メインステージ争奪戦3位", start:"15:55", end:"17:05"},
+  {day:3, type:"tokuten", booth:5, group:"メインステージ争奪戦2位", start:"17:15", end:"18:25"},
+  {day:3, type:"tokuten", booth:6, group:"ジエメイ", start:"12:15", end:"13:25"},
+  {day:3, type:"tokuten", booth:6, group:"愛乙女★DOLL", start:"13:35", end:"14:45"},
+  {day:3, type:"tokuten", booth:6, group:"パラディーク", start:"14:55", end:"16:05"},
+  {day:3, type:"tokuten", booth:6, group:"AKANECLUB.", start:"16:20", end:"17:30"},
+  {day:3, type:"tokuten", booth:6, group:"Appare!", start:"17:40", end:"18:50"},
+  {day:3, type:"tokuten", booth:7, group:"Ringwanderung", start:"12:40", end:"13:50"},
+  {day:3, type:"tokuten", booth:7, group:"すべての瞬間は君だった。", start:"14:00", end:"15:10"},
+  {day:3, type:"tokuten", booth:7, group:"AsIs", start:"17:45", end:"18:55"},
+  {day:3, type:"tokuten", booth:8, group:"Pretty Chuu", start:"16:50", end:"18:00"},
+  {day:3, type:"tokuten", booth:8, group:"2nd争奪 Bブロック1位", start:"18:35", end:"19:45"},
+  {day:3, type:"tokuten", booth:9, group:"THE ENCORE", start:"11:50", end:"13:00"},
+  {day:3, type:"tokuten", booth:9, group:"AOAO", start:"14:30", end:"15:40"},
+  {day:3, type:"tokuten", booth:9, group:"メインステージ争奪戦5位", start:"15:55", end:"17:05"},
+  {day:3, type:"tokuten", booth:9, group:"メインステージ争奪戦4位", start:"17:15", end:"18:25"},
+  {day:3, type:"tokuten", booth:9, group:"Toi Toi Toi", start:"19:20", end:"20:30"},
+  {day:3, type:"tokuten", booth:10, group:"MAGICAL SPEC", start:"13:35", end:"14:45"},
+  {day:3, type:"tokuten", booth:10, group:"Sweet Alley", start:"14:55", end:"16:05"},
+  {day:3, type:"tokuten", booth:10, group:"うゆさきな", start:"16:20", end:"17:30"},
+  {day:3, type:"tokuten", booth:10, group:"chuLa", start:"17:40", end:"18:50"},
+  {day:3, type:"tokuten", booth:10, group:"花いろは", start:"19:00", end:"20:10"},
+  {day:3, type:"tokuten", booth:11, group:"metarium", start:"12:40", end:"13:50"},
+  {day:3, type:"tokuten", booth:11, group:"NANIMONO", start:"14:00", end:"15:10"},
+  {day:3, type:"tokuten", booth:11, group:"Peel the Apple", start:"15:20", end:"16:30"},
+  {day:3, type:"tokuten", booth:11, group:"最終未来少女", start:"16:45", end:"17:55"},
+  {day:3, type:"tokuten", booth:11, group:"君に、胸キュン。", start:"18:05", end:"19:15"},
+  {day:3, type:"tokuten", booth:13, group:"アイドルカレッジ", start:"14:30", end:"15:40"},
+  {day:3, type:"tokuten", booth:13, group:"メインステージ争奪戦7位", start:"15:55", end:"17:05"},
+  {day:3, type:"tokuten", booth:13, group:"メインステージ争奪戦6位", start:"17:15", end:"18:25"},
+  {day:3, type:"tokuten", booth:13, group:"Root mimi", start:"18:35", end:"19:45"},
+  {day:3, type:"tokuten", booth:14, group:"いつかの夜に僕たちが、", start:"12:15", end:"13:25"},
+  {day:3, type:"tokuten", booth:14, group:"フルコース", start:"13:35", end:"14:45"},
+  {day:3, type:"tokuten", booth:14, group:"Sophià la Mode", start:"14:55", end:"16:05"},
+  {day:3, type:"tokuten", booth:14, group:"Switch Drop", start:"16:20", end:"17:30"},
+  {day:3, type:"tokuten", booth:14, group:"ファーストプレイリスト", start:"17:40", end:"18:50"},
+  {day:3, type:"tokuten", booth:15, group:"THE PINK MINDS", start:"12:40", end:"13:50"},
+  {day:3, type:"tokuten", booth:15, group:"VVSis", start:"14:00", end:"15:10"},
+  {day:3, type:"tokuten", booth:15, group:"MixVeil", start:"15:20", end:"16:30"},
+  {day:3, type:"tokuten", booth:15, group:"かすみ草とステラ", start:"16:45", end:"17:55"},
+  {day:3, type:"tokuten", booth:15, group:"Luce Twinkle Wink☆", start:"18:05", end:"19:15"},
+  {day:3, type:"tokuten", booth:17, group:"One Last Bloom", start:"11:50", end:"13:00"},
+  {day:3, type:"tokuten", booth:17, group:"はぐっと！", start:"13:15", end:"14:25"},
+  {day:3, type:"tokuten", booth:17, group:"ワンダーウィード天", start:"14:40", end:"15:50"},
+  {day:3, type:"tokuten", booth:17, group:"メインステージ争奪戦9位", start:"16:15", end:"17:25"},
+  {day:3, type:"tokuten", booth:18, group:"2nd争奪 B2位", start:"12:10", end:"13:20"},
+  {day:3, type:"tokuten", booth:18, group:"MATE×MATE!", start:"15:00", end:"16:10"},
+  {day:3, type:"tokuten", booth:18, group:"メインステージ争奪戦8位", start:"16:35", end:"17:45"},
+  {day:3, type:"tokuten", booth:20, group:"Lumiétoile", start:"12:50", end:"14:00"},
+  {day:3, type:"tokuten", booth:20, group:"buGG", start:"17:15", end:"18:25"},
+  {day:3, type:"tokuten", booth:20, group:"Bibbidi Chu", start:"18:45", end:"19:55"},
+  {day:3, type:"tokuten", booth:21, group:"アオノシグナル", start:"12:30", end:"13:50"},
+  {day:3, type:"tokuten", booth:21, group:"絶対少女", start:"15:35", end:"16:45"},
+  {day:3, type:"tokuten", booth:21, group:"コングラッチェ！", start:"16:50", end:"18:00"},
+  {day:3, type:"tokuten", booth:21, group:"AZATOY", start:"18:35", end:"19:45"},
+  {day:3, type:"tokuten", booth:22, group:"キュン!? 恋堕ちキューピッド", start:"11:25", end:"12:35"},
+  {day:3, type:"tokuten", booth:22, group:"Cherie!", start:"12:55", end:"14:05"},
+  {day:3, type:"tokuten", booth:22, group:"ネクスタリア", start:"14:20", end:"15:30"},
+  {day:3, type:"tokuten", booth:22, group:"ESTLINK☆", start:"15:45", end:"16:55"},
+  {day:3, type:"tokuten", booth:22, group:"SPRISE", start:"17:00", end:"18:10"},
+  {day:3, type:"tokuten", booth:22, group:"ハレとハレ！", start:"18:25", end:"19:35"},
+  {day:3, type:"tokuten", booth:23, group:"恋に落ちる確率は限りなく低いが0じゃない", start:"12:05", end:"13:15"},
+  {day:3, type:"tokuten", booth:23, group:"月とソーダ", start:"13:20", end:"14:30"},
+  {day:3, type:"tokuten", booth:23, group:"Krays", start:"14:35", end:"15:45"},
+  {day:3, type:"tokuten", booth:23, group:"ポジティブモンスター", start:"16:00", end:"17:10"},
+  {day:3, type:"tokuten", booth:23, group:"Panic Monster !n Wonderland", start:"17:20", end:"18:30"},
+  {day:3, type:"tokuten", booth:23, group:"ぜろから☆すた→と", start:"18:45", end:"19:55"},
+  {day:3, type:"tokuten", booth:24, group:"Lって何のLですか？", start:"12:20", end:"13:30"},
+  {day:3, type:"tokuten", booth:24, group:"YumeLia", start:"13:40", end:"14:50"},
+  {day:3, type:"tokuten", booth:24, group:"Drug&Drop", start:"15:05", end:"16:15"},
+  {day:3, type:"tokuten", booth:24, group:"2nd争奪 B3位", start:"16:20", end:"17:30"},
+  {day:3, type:"tokuten", booth:24, group:"17秒前の瞬きに光を", start:"17:40", end:"18:50"},
+  {day:3, type:"tokuten", booth:24, group:"I MY ME MINE", start:"19:05", end:"20:15"},
+  {day:3, type:"tokuten", booth:25, group:"LittleSignal", start:"12:35", end:"13:45"},
+  {day:3, type:"tokuten", booth:25, group:"踊れ！神風", start:"14:00", end:"15:10"},
+  {day:3, type:"tokuten", booth:25, group:"Melty BeaR", start:"15:25", end:"16:35"},
+  {day:3, type:"tokuten", booth:25, group:"PiRiRi", start:"16:40", end:"17:50"},
+  {day:3, type:"tokuten", booth:25, group:"W.ダブルヴィー", start:"18:00", end:"19:10"},
+  {day:3, type:"tokuten", booth:26, group:"SAI²Rium", start:"15:35", end:"16:45"},
+  {day:3, type:"tokuten", booth:26, group:"きゅんﾀﾋに一生を!?", start:"16:50", end:"18:00"},
+  // DAY3 HEROINES関連特典会：新公開タイテ画像（2026年10月28日受領分）
+  {day:3, type:"tokuten", booth:"27〜30", group:"MEGAFON", start:"11:50", end:"12:50", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生大阪", start:"11:50", end:"12:50", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ポンコツコンポ", start:"12:20", end:"13:20", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"CAL&RES", start:"13:10", end:"14:10", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ウメコマチ", start:"13:10", end:"14:10", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"Pastel Closet", start:"13:35", end:"14:35", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"i-COL", start:"14:00", end:"15:00", heroines:true, note:"前特典会"},
+  {day:3, type:"tokuten", booth:"27〜30", group:"iON!", start:"14:00", end:"15:00", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"パラレルサイダー", start:"14:15", end:"15:15", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ZUTTOMOTTO", start:"14:15", end:"15:15", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"夜光性アミューズ", start:"14:50", end:"15:50", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"なう♡すとれーじ", start:"15:20", end:"16:20", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ナナコロビヤオキ", start:"15:20", end:"16:20", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"TENRIN", start:"15:50", end:"16:50", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ヒロインズ研究生", start:"15:55", end:"16:55", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"テンシンランマン", start:"15:55", end:"16:55", heroines:true, note:"前特典会"},
+  {day:3, type:"tokuten", booth:"27〜30", group:"iMIN!", start:"16:00", end:"17:00", heroines:true, note:"前特典会"},
+  {day:3, type:"tokuten", booth:"27〜30", group:"LADYBABY", start:"16:55", end:"17:55", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"iLiFE!", start:"17:10", end:"18:10", heroines:true, note:"前特典会"},
+  {day:3, type:"tokuten", booth:"27〜30", group:"のんふぃく！", start:"17:10", end:"18:10", heroines:true, note:"前特典会"},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ガガピエロ", start:"17:40", end:"18:40", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"AdamLilith", start:"18:00", end:"19:10", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ラストシーン", start:"18:00", end:"19:00", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"III", start:"18:30", end:"19:30", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ハルカエコー", start:"19:00", end:"20:00", heroines:true},
+  {day:3, type:"tokuten", booth:"27〜30", group:"ドレスコード", start:"19:15", end:"20:15", heroines:true},
+
+  // DAY1 ライブ
+  {day:1, type:"live", stage:"PUMPKIN", group:"Rain Tree", start:"12:00", end:"12:25"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"iMIN!", start:"12:25", end:"12:50"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"KAWAII LAB. MATES", start:"12:50", end:"13:15"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"ジエメイ", start:"13:20", end:"13:45"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"REIRIE", start:"13:45", end:"14:10"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"Toi Toi Toi", start:"14:10", end:"14:35"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"FES☆TIVE", start:"14:40", end:"15:05"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"UtaGe!", start:"15:05", end:"15:30"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"ドラマチックレコード", start:"15:30", end:"15:55"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"TENRIN", start:"16:05", end:"16:35"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"ドレスコード", start:"16:35", end:"17:05"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"STU48", start:"17:05", end:"17:35"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"log you", start:"17:40", end:"18:10"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"Onephony", start:"18:10", end:"18:40"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"ナナコロビヤオキ", start:"18:40", end:"19:10"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"MEGAFON", start:"19:15", end:"19:45"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"fav me", start:"19:45", end:"20:15"},
+  {day:1, type:"live", stage:"PUMPKIN", group:"SWEET STEADY", start:"20:15", end:"20:50"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"アキシブproject", start:"12:05", end:"12:30"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"Pastel Closet", start:"12:30", end:"12:55"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"テンシンランマン", start:"12:55", end:"13:20"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"NANIMONO", start:"13:25", end:"13:50"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"アンスリューム", start:"13:50", end:"14:15"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"パラディーク", start:"14:15", end:"14:40"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"可憐なアイボリー", start:"14:45", end:"15:10"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"ラナキュラ", start:"15:10", end:"15:35"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"山﨑夢羽", start:"15:35", end:"16:00"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"Palette Parade", start:"16:10", end:"16:35"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"LinQ", start:"16:35", end:"17:00"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"ヒロインズ研究生", start:"17:00", end:"17:25"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"夜光性アミューズ", start:"17:30", end:"17:55"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"ION!", start:"17:55", end:"18:20"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"SEKAIE☆", start:"18:20", end:"18:45"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"君と見るそら", start:"18:50", end:"19:15"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"ウメコマチ", start:"19:15", end:"19:40"},
+  {day:1, type:"live", stage:"VAMPIRE", group:"chuLa", start:"19:40", end:"20:05"},
+  {day:1, type:"live", stage:"GHOST", group:"まねきケチャ", start:"12:05", end:"12:30"},
+  {day:1, type:"live", stage:"GHOST", group:"なんキニ！", start:"12:30", end:"12:55"},
+  {day:1, type:"live", stage:"GHOST", group:"FULIT BOX", start:"12:55", end:"13:20"},
+  {day:1, type:"live", stage:"GHOST", group:"α+", start:"13:25", end:"13:50"},
+  {day:1, type:"live", stage:"GHOST", group:"ラストシーン", start:"13:50", end:"14:15"},
+  {day:1, type:"live", stage:"GHOST", group:"江籠裕奈", start:"14:15", end:"14:40"},
+  {day:1, type:"live", stage:"GHOST", group:"ハルカエコー", start:"14:45", end:"15:10"},
+  {day:1, type:"live", stage:"GHOST", group:"III", start:"15:10", end:"15:35"},
+  {day:1, type:"live", stage:"GHOST", group:"AdamLilith", start:"15:35", end:"16:00"},
+  {day:1, type:"live", stage:"GHOST", group:"BNSI", start:"16:10", end:"16:35"},
+  {day:1, type:"live", stage:"GHOST", group:"selfish", start:"16:35", end:"17:00"},
+  {day:1, type:"live", stage:"GHOST", group:"点染テンセイ少女。", start:"17:00", end:"17:25"},
+  {day:1, type:"live", stage:"GHOST", group:"ガガピエロ", start:"17:30", end:"17:55"},
+  {day:1, type:"live", stage:"GHOST", group:"HIBANA", start:"17:55", end:"18:20"},
+  {day:1, type:"live", stage:"GHOST", group:"feelNEO", start:"18:20", end:"18:45"},
+  {day:1, type:"live", stage:"GHOST", group:"こみっきゅおん！", start:"18:50", end:"19:15"},
+  {day:1, type:"live", stage:"GHOST", group:"HzMe", start:"19:15", end:"19:40"},
+  {day:1, type:"live", stage:"GHOST", group:"hakanai", start:"19:40", end:"20:05"},
+  {day:1, type:"live", stage:"WITCH", group:"メイビーME", start:"12:05", end:"12:30"},
+  {day:1, type:"live", stage:"WITCH", group:"ポンコツコンポ", start:"12:30", end:"12:55"},
+  {day:1, type:"live", stage:"WITCH", group:"びっくえんじぇる", start:"12:55", end:"13:20"},
+  {day:1, type:"live", stage:"WITCH", group:"Malcolm Mask McLaren", start:"13:25", end:"13:50"},
+  {day:1, type:"live", stage:"WITCH", group:"Ma'Scar' Piece", start:"13:50", end:"14:15"},
+  {day:1, type:"live", stage:"WITCH", group:"HelloYouth", start:"14:15", end:"14:40"},
+  {day:1, type:"live", stage:"WITCH", group:"metarium", start:"14:45", end:"15:10"},
+  {day:1, type:"live", stage:"WITCH", group:"コングラッチェ！", start:"15:10", end:"15:35"},
+  {day:1, type:"live", stage:"WITCH", group:"Chuu♡Cute", start:"15:35", end:"16:00"},
+  {day:1, type:"live", stage:"WITCH", group:"アップアップガールズ（仮）", start:"16:10", end:"16:35"},
+  {day:1, type:"live", stage:"WITCH", group:"RAVIDAVI", start:"16:35", end:"17:00"},
+  {day:1, type:"live", stage:"WITCH", group:"LADYBABY", start:"17:00", end:"17:25"},
+  {day:1, type:"live", stage:"WITCH", group:"ちゃーむぼっしゅ", start:"17:30", end:"17:55"},
+  {day:1, type:"live", stage:"WITCH", group:"ヒロインズ研究生大阪", start:"17:55", end:"18:20"},
+  {day:1, type:"live", stage:"WITCH", group:"ZUTTOMOTTO", start:"18:20", end:"18:45"},
+  {day:1, type:"live", stage:"WITCH", group:"CAL&RES", start:"18:50", end:"19:15"},
+  {day:1, type:"live", stage:"WITCH", group:"LillyS/ash", start:"19:15", end:"19:40"},
+  {day:1, type:"live", stage:"WITCH", group:"キングサリ", start:"19:40", end:"20:05"},
+  {day:1, type:"live", stage:"SPIDER", group:"AOSTARIA", start:"12:10", end:"12:30"},
+  {day:1, type:"live", stage:"SPIDER", group:"山﨑夢羽", start:"12:30", end:"12:50"},
+  {day:1, type:"live", stage:"SPIDER", group:"Lily scale", start:"12:50", end:"13:10"},
+  {day:1, type:"live", stage:"SPIDER", group:"LIE LILLIE", start:"13:10", end:"13:30"},
+  {day:1, type:"live", stage:"SPIDER", group:"エイアイカ", start:"13:35", end:"13:55"},
+  {day:1, type:"live", stage:"SPIDER", group:"KissBee", start:"13:55", end:"14:15"},
+  {day:1, type:"live", stage:"SPIDER", group:"パラレルサイダー", start:"14:15", end:"14:35"},
+  {day:1, type:"live", stage:"SPIDER", group:"SAISON", start:"14:35", end:"14:55"},
+  {day:1, type:"live", stage:"SPIDER", group:"Maison de Queen", start:"15:00", end:"15:20"},
+  {day:1, type:"live", stage:"SPIDER", group:"MEOWMEW", start:"15:20", end:"15:40"},
+  {day:1, type:"live", stage:"SPIDER", group:"紅色の飛行少女", start:"15:40", end:"16:00"},
+  {day:1, type:"live", stage:"SPIDER", group:"Aivery", start:"16:00", end:"16:20"},
+  {day:1, type:"live", stage:"SPIDER", group:"RePLAY", start:"16:35", end:"16:55"},
+  {day:1, type:"live", stage:"SPIDER", group:"XINXIN", start:"16:55", end:"17:15"},
+  {day:1, type:"live", stage:"SPIDER", group:"PIAGRIM", start:"17:15", end:"17:35"},
+  {day:1, type:"live", stage:"SPIDER", group:"buGG", start:"17:35", end:"17:55"},
+  {day:1, type:"live", stage:"SPIDER", group:"なう♡すとれーじ", start:"18:00", end:"18:20"},
+  {day:1, type:"live", stage:"SPIDER", group:"フルコース", start:"18:20", end:"18:40"},
+  {day:1, type:"live", stage:"SPIDER", group:"グットクルー", start:"18:40", end:"19:00"},
+  {day:1, type:"live", stage:"SPIDER", group:"KAMAITACI", start:"19:05", end:"19:25"},
+  {day:1, type:"live", stage:"SPIDER", group:"STARRY×NIGHT↗", start:"19:25", end:"19:45"},
+  {day:1, type:"live", stage:"SPIDER", group:"unFinale Tokyo", start:"19:45", end:"20:05"},
+  {day:1, type:"live", stage:"SPIDER", group:"アルテミスの翼", start:"20:05", end:"20:25"},
+  {day:1, type:"live", stage:"CANDY", group:"Secret Pinky", start:"12:15", end:"12:35"},
+  {day:1, type:"live", stage:"CANDY", group:"ルシフェルの園。", start:"12:35", end:"12:55"},
+  {day:1, type:"live", stage:"CANDY", group:"踊れ！神風", start:"12:55", end:"13:15"},
+  {day:1, type:"live", stage:"CANDY", group:"As a Cutie Pomeranian", start:"13:15", end:"13:35"},
+  {day:1, type:"live", stage:"CANDY", group:"ぶっとび！パンデミック（出演権争奪B3位）", start:"13:40", end:"13:55"},
+  {day:1, type:"live", stage:"CANDY", group:"ラビットビット", start:"13:55", end:"14:15"},
+  {day:1, type:"live", stage:"CANDY", group:"Falench.", start:"14:15", end:"14:35"},
+  {day:1, type:"live", stage:"CANDY", group:"COLOR of COLOR", start:"14:35", end:"14:55"},
+  {day:1, type:"live", stage:"CANDY", group:"NO FRAME", start:"15:00", end:"15:20"},
+  {day:1, type:"live", stage:"CANDY", group:"WASURENA", start:"15:20", end:"15:40"},
+  {day:1, type:"live", stage:"CANDY", group:"ルルネージュ", start:"15:40", end:"16:00"},
+  {day:1, type:"live", stage:"CANDY", group:"オカシリゾート", start:"16:00", end:"16:20"},
+  {day:1, type:"live", stage:"CANDY", group:"MeIMI", start:"16:35", end:"16:55"},
+  {day:1, type:"live", stage:"CANDY", group:"ネコプラpixx.", start:"16:55", end:"17:15"},
+  {day:1, type:"live", stage:"CANDY", group:"夜とメルク", start:"17:15", end:"17:35"},
+  {day:1, type:"live", stage:"CANDY", group:"iCON!", start:"17:35", end:"17:55"},
+  {day:1, type:"live", stage:"CANDY", group:"Lollipop♡CHU", start:"18:00", end:"18:20"},
+  {day:1, type:"live", stage:"CANDY", group:"FRESH CHARM", start:"18:20", end:"18:40"},
+  {day:1, type:"live", stage:"CANDY", group:"玉響storage", start:"18:40", end:"19:00"},
+  {day:1, type:"live", stage:"CANDY", group:"パラディーク", start:"19:05", end:"19:25"},
+  {day:1, type:"live", stage:"CANDY", group:"Aerolipop", start:"19:25", end:"19:45"},
+  {day:1, type:"live", stage:"CANDY", group:"AQA", start:"19:45", end:"20:05"},
+  {day:1, type:"live", stage:"CANDY", group:"昼夜逆転", start:"20:05", end:"20:25"},
+
+  // DAY2 ライブ
+  {day:2, type:"live", stage:"PUMPKIN", group:"アンスリューム", start:"11:00", end:"11:25"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"なみだ色の消しごむ", start:"11:25", end:"11:50"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"衛星とカラテア", start:"11:50", end:"12:15"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"ナナコロビヤオキ", start:"12:15", end:"12:40"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"INUWASI", start:"12:45", end:"13:15"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"GILTY×GILTY", start:"13:15", end:"13:45"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"chuLa", start:"13:45", end:"14:15"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"ハルニシオン", start:"14:20", end:"14:50"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"JamsCollection", start:"14:50", end:"15:20"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"ラフ×ラフ", start:"15:20", end:"15:50"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"虹のコンキスタドール", start:"16:00", end:"16:30"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"Appare!", start:"16:30", end:"17:00"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"のんふぃく！", start:"17:00", end:"17:30"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"夜光性アミューズ", start:"17:35", end:"18:05"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"NEO JAPONISM", start:"18:05", end:"18:35"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"iMIN!", start:"18:35", end:"19:00"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"iON!", start:"19:05", end:"19:35"},
+  {day:2, type:"live", stage:"PUMPKIN", group:"iLiFE!", start:"19:35", end:"20:10"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"ラストシーン", start:"11:05", end:"11:30"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"ハルカエコー", start:"11:30", end:"11:55"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"#Mooove!", start:"11:55", end:"12:20"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"ポンコツコンポ", start:"12:25", end:"12:50"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"フルコース", start:"12:50", end:"13:15"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"こみっきゅおん！", start:"13:15", end:"13:40"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"AOAO", start:"13:45", end:"14:10"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"Onephony", start:"14:10", end:"14:35"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"MEGAFON", start:"14:35", end:"15:00"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"NEVER END ROLL", start:"15:10", end:"15:35"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"KAWAII LAB. MATES", start:"15:35", end:"16:00"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"2nd season Aブロック1位", start:"16:00", end:"16:25"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"Tohkei", start:"16:30", end:"16:55"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"myojou", start:"16:55", end:"17:20"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"マリークラウン", start:"17:20", end:"17:45"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"III", start:"17:50", end:"18:15"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"THE ENCORE", start:"18:10", end:"18:40"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"feelNEO", start:"18:40", end:"19:05"},
+  {day:2, type:"live", stage:"VAMPIRE", group:"ドラマチックレコード", start:"19:05", end:"19:30"},
+  {day:2, type:"live", stage:"GHOST", group:"ヒロインズ研究生", start:"11:05", end:"11:30"},
+  {day:2, type:"live", stage:"GHOST", group:"HelloYouth", start:"11:30", end:"11:55"},
+  {day:2, type:"live", stage:"GHOST", group:"SEKAIE☆", start:"11:55", end:"12:20"},
+  {day:2, type:"live", stage:"GHOST", group:"グットクルー", start:"12:25", end:"12:50"},
+  {day:2, type:"live", stage:"GHOST", group:"ラナキュラ", start:"12:50", end:"13:15"},
+  {day:2, type:"live", stage:"GHOST", group:"MyDearDarlin'", start:"13:15", end:"13:40"},
+  {day:2, type:"live", stage:"GHOST", group:"山﨑夢羽", start:"13:45", end:"14:10"},
+  {day:2, type:"live", stage:"GHOST", group:"amini", start:"14:10", end:"14:35"},
+  {day:2, type:"live", stage:"GHOST", group:"キングサリ", start:"14:35", end:"15:00"},
+  {day:2, type:"live", stage:"GHOST", group:"ガガピエロ", start:"15:10", end:"15:35"},
+  {day:2, type:"live", stage:"GHOST", group:"AdamLilith", start:"15:35", end:"16:00"},
+  {day:2, type:"live", stage:"GHOST", group:"TENRIN", start:"16:00", end:"16:25"},
+  {day:2, type:"live", stage:"GHOST", group:"可憐なアイボリー", start:"16:30", end:"16:55"},
+  {day:2, type:"live", stage:"GHOST", group:"すべての瞬間は君だった。", start:"16:55", end:"17:20"},
+  {day:2, type:"live", stage:"GHOST", group:"かすみ草とステラ", start:"17:20", end:"17:45"},
+  {day:2, type:"live", stage:"GHOST", group:"ChumToto", start:"17:50", end:"18:15"},
+  {day:2, type:"live", stage:"GHOST", group:"STAiNY", start:"18:15", end:"18:40"},
+  {day:2, type:"live", stage:"GHOST", group:"RiNCENT♯", start:"18:40", end:"19:05"},
+  {day:2, type:"live", stage:"WITCH", group:"himawari(船橋)", start:"11:05", end:"11:30"},
+  {day:2, type:"live", stage:"WITCH", group:"Märmi", start:"11:30", end:"11:55"},
+  {day:2, type:"live", stage:"WITCH", group:"なう♡すとれーじ", start:"11:55", end:"12:20"},
+  {day:2, type:"live", stage:"WITCH", group:"Lv.♡Charm", start:"12:25", end:"12:50"},
+  {day:2, type:"live", stage:"WITCH", group:"Pastel Closet", start:"12:50", end:"13:15"},
+  {day:2, type:"live", stage:"WITCH", group:"シンデレラ宣言！", start:"13:15", end:"13:40"},
+  {day:2, type:"live", stage:"WITCH", group:"パラディーク", start:"13:45", end:"14:10"},
+  {day:2, type:"live", stage:"WITCH", group:"α+", start:"14:10", end:"14:35"},
+  {day:2, type:"live", stage:"WITCH", group:"ドレスコード", start:"14:35", end:"15:00"},
+  {day:2, type:"live", stage:"WITCH", group:"マジカル・パンチライン", start:"15:10", end:"15:35"},
+  {day:2, type:"live", stage:"WITCH", group:"MAGICAL SPEC", start:"15:35", end:"16:00"},
+  {day:2, type:"live", stage:"WITCH", group:"虜なるプレリュード", start:"16:00", end:"16:25"},
+  {day:2, type:"live", stage:"WITCH", group:"ウメコマチ", start:"16:30", end:"16:55"},
+  {day:2, type:"live", stage:"WITCH", group:"テンシンランマン", start:"16:55", end:"17:20"},
+  {day:2, type:"live", stage:"WITCH", group:"パラレルサイダー", start:"17:20", end:"17:45"},
+  {day:2, type:"live", stage:"WITCH", group:"#よーよーよー", start:"17:50", end:"18:15"},
+  {day:2, type:"live", stage:"WITCH", group:"ワガママなラストノート", start:"18:15", end:"18:40"},
+  {day:2, type:"live", stage:"WITCH", group:"フューチャーサイダー", start:"18:40", end:"19:05"},
+  {day:2, type:"live", stage:"SPIDER", group:"Bunny La Crew", start:"11:10", end:"11:30"},
+  {day:2, type:"live", stage:"SPIDER", group:"LOVE CHANT", start:"11:30", end:"11:50"},
+  {day:2, type:"live", stage:"SPIDER", group:"月とソーダ", start:"11:50", end:"12:10"},
+  {day:2, type:"live", stage:"SPIDER", group:"シュレーディンガーの犬", start:"12:10", end:"12:30"},
+  {day:2, type:"live", stage:"SPIDER", group:"2nd season Aブロック2位", start:"12:35", end:"12:55"},
+  {day:2, type:"live", stage:"SPIDER", group:"My Dresscode", start:"12:55", end:"13:15"},
+  {day:2, type:"live", stage:"SPIDER", group:"いつかの夜に僕たちが、", start:"13:15", end:"13:35"},
+  {day:2, type:"live", stage:"SPIDER", group:"太陽と踊れ月夜に唄え", start:"13:35", end:"13:55"},
+  {day:2, type:"live", stage:"SPIDER", group:"メイビーME", start:"14:00", end:"14:20"},
+  {day:2, type:"live", stage:"SPIDER", group:"ON THE AIR", start:"14:20", end:"14:40"},
+  {day:2, type:"live", stage:"SPIDER", group:"ちゃーむぼっしゅ", start:"14:40", end:"15:00"},
+  {day:2, type:"live", stage:"SPIDER", group:"ZUTTOMOTTO", start:"15:00", end:"15:20"},
+  {day:2, type:"live", stage:"SPIDER", group:"Malcolm Mask McLaren", start:"15:35", end:"15:55"},
+  {day:2, type:"live", stage:"SPIDER", group:"ヒロインズ研究生大阪", start:"15:55", end:"16:15"},
+  {day:2, type:"live", stage:"SPIDER", group:"PIAGRIM", start:"16:15", end:"16:35"},
+  {day:2, type:"live", stage:"SPIDER", group:"CAL&RES", start:"16:35", end:"16:55"},
+  {day:2, type:"live", stage:"SPIDER", group:"ポンコツコンポ", start:"17:00", end:"17:20"},
+  {day:2, type:"live", stage:"SPIDER", group:"LADYBABY", start:"17:20", end:"17:40"},
+  {day:2, type:"live", stage:"SPIDER", group:"すてねこキャッツ", start:"17:40", end:"18:00"},
+  {day:2, type:"live", stage:"SPIDER", group:"なんキニ！", start:"18:05", end:"18:25"},
+  {day:2, type:"live", stage:"SPIDER", group:"アキシブproject", start:"18:25", end:"18:45"},
+  {day:2, type:"live", stage:"SPIDER", group:"まねきケチャ", start:"18:45", end:"19:05"},
+  {day:2, type:"live", stage:"CANDY", group:"有頂天メリー", start:"11:05", end:"11:25"},
+  {day:2, type:"live", stage:"CANDY", group:"にっぽん！真骨頂", start:"11:25", end:"11:45"},
+  {day:2, type:"live", stage:"CANDY", group:"トウトイナ。", start:"11:45", end:"12:05"},
+  {day:2, type:"live", stage:"CANDY", group:"BabyDoll（出演権争奪A3位）", start:"12:05", end:"12:20"},
+  {day:2, type:"live", stage:"CANDY", group:"SUPER JYAPON", start:"12:25", end:"12:45"},
+  {day:2, type:"live", stage:"CANDY", group:"わんふぁす！", start:"12:45", end:"13:05"},
+  {day:2, type:"live", stage:"CANDY", group:"BUNGEE GUM.", start:"13:05", end:"13:25"},
+  {day:2, type:"live", stage:"CANDY", group:"アイテムはてるてるのみ", start:"13:25", end:"13:45"},
+  {day:2, type:"live", stage:"CANDY", group:"BANKURUWASE!!（出演権争奪A2位）", start:"13:45", end:"14:00"},
+  {day:2, type:"live", stage:"CANDY", group:"ParaLulu", start:"14:05", end:"14:25"},
+  {day:2, type:"live", stage:"CANDY", group:"月とソーダ", start:"14:25", end:"14:45"},
+  {day:2, type:"live", stage:"CANDY", group:"ベンジャス！", start:"14:45", end:"15:05"},
+  {day:2, type:"live", stage:"CANDY", group:"すてねこキャッツ", start:"15:05", end:"15:25"},
+  {day:2, type:"live", stage:"CANDY", group:"2nd season A3位", start:"15:25", end:"15:40"},
+  {day:2, type:"live", stage:"CANDY", group:"&CUTE", start:"15:55", end:"16:15"},
+  {day:2, type:"live", stage:"CANDY", group:"LOVE CHANT", start:"16:15", end:"16:35"},
+  {day:2, type:"live", stage:"CANDY", group:"君のメインヒロイン", start:"16:35", end:"16:55"},
+  {day:2, type:"live", stage:"CANDY", group:"ON THE AIR", start:"17:00", end:"17:20"},
+  {day:2, type:"live", stage:"CANDY", group:"My Dresscode", start:"17:20", end:"17:40"},
+  {day:2, type:"live", stage:"CANDY", group:"きゅんﾀﾋに一生を!?", start:"17:45", end:"18:00"},
+  {day:2, type:"live", stage:"CANDY", group:"Secret Pinky", start:"18:05", end:"18:25"},
+  {day:2, type:"live", stage:"CANDY", group:"強がりセンセーション", start:"18:25", end:"18:45"},
+  {day:2, type:"live", stage:"CANDY", group:"びっくえんじぇる", start:"18:45", end:"19:05"},
+
+  // DAY3 ライブ
+  {day:3, type:"live", stage:"PUMPKIN", group:"MEGAFON", start:"11:00", end:"11:30"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"Merry BAD TUNE.", start:"11:30", end:"12:00"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"AVAM", start:"12:00", end:"12:30"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"KAWAII LAB. SOUTH", start:"12:35", end:"13:05"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"ION!", start:"13:05", end:"13:35"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"しなこ", start:"13:35", end:"13:55"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"夜光性アミューズ", start:"14:00", end:"14:30"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"ZOCX", start:"14:30", end:"15:00"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"TENRIN", start:"15:00", end:"15:30"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"@onefive", start:"15:45", end:"16:15"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"i-COL", start:"16:15", end:"16:45"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"ばってん少女隊", start:"16:45", end:"17:15"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"高嶺のなでしこ", start:"17:20", end:"17:50"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"MORE STAR", start:"17:50", end:"18:20"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"メインステージ争奪戦1位", start:"18:20", end:"18:45"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"のんふぃく！", start:"18:50", end:"19:20"},
+  {day:3, type:"live", stage:"PUMPKIN", group:"iLiFE!", start:"19:20", end:"19:55"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"INUWASI", start:"11:05", end:"11:30"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"ジエメイ", start:"11:30", end:"11:55"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"Ringwanderung", start:"11:55", end:"12:20"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"OS☆U", start:"12:25", end:"12:50"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"愛乙女★DOLL", start:"12:50", end:"13:15"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"すべての瞬間は君だった。", start:"13:15", end:"13:40"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"アキシブproject", start:"13:45", end:"14:10"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"パラディーク", start:"14:10", end:"14:35"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"ナナコロビヤオキ", start:"14:35", end:"15:00"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"メインステージ争奪戦3位", start:"15:10", end:"15:35"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"AKANECLUB.", start:"15:35", end:"16:00"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"AsIs", start:"16:00", end:"16:25"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"メインステージ争奪戦2位", start:"16:30", end:"16:55"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"Appare!", start:"16:55", end:"17:20"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"ラストシーン", start:"17:20", end:"17:45"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"2nd season Bブロック1位", start:"17:50", end:"18:15"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"iMIN!", start:"18:15", end:"18:40"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"ドレスコード", start:"18:40", end:"19:05"},
+  {day:3, type:"live", stage:"VAMPIRE", group:"Pretty Chuu", start:"19:05", end:"19:30"},
+  {day:3, type:"live", stage:"GHOST", group:"THE ENCORE", start:"11:05", end:"11:30"},
+  {day:3, type:"live", stage:"GHOST", group:"ポンコツコンポ", start:"11:30", end:"11:55"},
+  {day:3, type:"live", stage:"GHOST", group:"metarium", start:"11:55", end:"12:20"},
+  {day:3, type:"live", stage:"GHOST", group:"ウメコマチ", start:"12:25", end:"12:50"},
+  {day:3, type:"live", stage:"GHOST", group:"MAGICAL SPEC", start:"12:50", end:"13:15"},
+  {day:3, type:"live", stage:"GHOST", group:"NANIMONO", start:"13:15", end:"13:40"},
+  {day:3, type:"live", stage:"GHOST", group:"AOAO", start:"13:45", end:"14:10"},
+  {day:3, type:"live", stage:"GHOST", group:"Sweet Alley", start:"14:10", end:"14:35"},
+  {day:3, type:"live", stage:"GHOST", group:"Peel the Apple", start:"14:35", end:"15:00"},
+  {day:3, type:"live", stage:"GHOST", group:"メインステージ争奪戦5位", start:"15:10", end:"15:35"},
+  {day:3, type:"live", stage:"GHOST", group:"うゆさきな", start:"15:35", end:"16:00"},
+  {day:3, type:"live", stage:"GHOST", group:"最終未来少女", start:"16:00", end:"16:25"},
+  {day:3, type:"live", stage:"GHOST", group:"メインステージ争奪戦4位", start:"16:30", end:"16:55"},
+  {day:3, type:"live", stage:"GHOST", group:"chuLa", start:"16:55", end:"17:20"},
+  {day:3, type:"live", stage:"GHOST", group:"君に、胸キュン。", start:"17:20", end:"17:45"},
+  {day:3, type:"live", stage:"GHOST", group:"Root mimi", start:"17:50", end:"18:15"},
+  {day:3, type:"live", stage:"GHOST", group:"花いろは", start:"18:15", end:"18:40"},
+  {day:3, type:"live", stage:"GHOST", group:"Toi Toi Toi", start:"18:40", end:"19:05"},
+  {day:3, type:"live", stage:"WITCH", group:"ヒロインズ研究生大阪", start:"11:05", end:"11:30"},
+  {day:3, type:"live", stage:"WITCH", group:"いつかの夜に僕たちが、", start:"11:30", end:"11:55"},
+  {day:3, type:"live", stage:"WITCH", group:"THE PINK MINDS", start:"11:55", end:"12:20"},
+  {day:3, type:"live", stage:"WITCH", group:"CAL&RES", start:"12:25", end:"12:50"},
+  {day:3, type:"live", stage:"WITCH", group:"フルコース", start:"12:50", end:"13:15"},
+  {day:3, type:"live", stage:"WITCH", group:"VVSis", start:"13:15", end:"13:40"},
+  {day:3, type:"live", stage:"WITCH", group:"アイドルカレッジ", start:"13:45", end:"14:10"},
+  {day:3, type:"live", stage:"WITCH", group:"Sophià la Mode", start:"14:10", end:"14:35"},
+  {day:3, type:"live", stage:"WITCH", group:"MixVeil", start:"14:35", end:"15:00"},
+  {day:3, type:"live", stage:"WITCH", group:"メインステージ争奪戦7位", start:"15:10", end:"15:35"},
+  {day:3, type:"live", stage:"WITCH", group:"Switch Drop", start:"15:35", end:"16:00"},
+  {day:3, type:"live", stage:"WITCH", group:"かすみ草とステラ", start:"16:00", end:"16:25"},
+  {day:3, type:"live", stage:"WITCH", group:"メインステージ争奪戦6位", start:"16:30", end:"16:55"},
+  {day:3, type:"live", stage:"WITCH", group:"ファーストプレイリスト", start:"16:55", end:"17:20"},
+  {day:3, type:"live", stage:"WITCH", group:"Luce Twinkle Wink☆", start:"17:20", end:"17:45"},
+  {day:3, type:"live", stage:"WITCH", group:"AZATOY", start:"17:50", end:"18:15"},
+  {day:3, type:"live", stage:"WITCH", group:"ハルカエコー", start:"18:15", end:"18:40"},
+  {day:3, type:"live", stage:"WITCH", group:"テンシンランマン", start:"18:40", end:"19:05"},
+  {day:3, type:"live", stage:"SPIDER", group:"One Last Bloom", start:"11:10", end:"11:30"},
+  {day:3, type:"live", stage:"SPIDER", group:"2nd season B2位", start:"11:30", end:"11:50"},
+  {day:3, type:"live", stage:"SPIDER", group:"アオノシグナル", start:"11:50", end:"12:10"},
+  {day:3, type:"live", stage:"SPIDER", group:"Lumiétoile", start:"12:10", end:"12:30"},
+  {day:3, type:"live", stage:"SPIDER", group:"はぐっと！（出演権争奪1位）", start:"12:35", end:"12:55"},
+  {day:3, type:"live", stage:"SPIDER", group:"Pastel Closet", start:"12:55", end:"13:15"},
+  {day:3, type:"live", stage:"SPIDER", group:"パラレルサイダー", start:"13:15", end:"13:35"},
+  {day:3, type:"live", stage:"SPIDER", group:"ZUTTOMOTTO", start:"13:35", end:"13:55"},
+  {day:3, type:"live", stage:"SPIDER", group:"ワンダーウィード天", start:"14:00", end:"14:20"},
+  {day:3, type:"live", stage:"SPIDER", group:"MATE×MATE!", start:"14:20", end:"14:40"},
+  {day:3, type:"live", stage:"SPIDER", group:"なう♡すとれーじ", start:"14:40", end:"15:00"},
+  {day:3, type:"live", stage:"SPIDER", group:"ヒロインズ研究生", start:"15:00", end:"15:20"},
+  {day:3, type:"live", stage:"SPIDER", group:"メインステージ争奪戦9位", start:"15:35", end:"15:55"},
+  {day:3, type:"live", stage:"SPIDER", group:"メインステージ争奪戦8位", start:"15:55", end:"16:15"},
+  {day:3, type:"live", stage:"SPIDER", group:"LADYBABY", start:"16:15", end:"16:35"},
+  {day:3, type:"live", stage:"SPIDER", group:"buGG", start:"16:35", end:"16:55"},
+  {day:3, type:"live", stage:"SPIDER", group:"ガガピエロ", start:"17:00", end:"17:20"},
+  {day:3, type:"live", stage:"SPIDER", group:"AdamLilith", start:"17:20", end:"17:40"},
+  {day:3, type:"live", stage:"SPIDER", group:"III", start:"17:40", end:"18:00"},
+  {day:3, type:"live", stage:"SPIDER", group:"Bibbidi Chu（出演権争奪1位）", start:"18:05", end:"18:25"},
+  {day:3, type:"live", stage:"SPIDER", group:"CURE'T", start:"18:25", end:"18:45"},
+  {day:3, type:"live", stage:"SPIDER", group:"絶対少女", start:"18:45", end:"19:05"},
+  {day:3, type:"live", stage:"SPIDER", group:"コングラッチェ！", start:"19:05", end:"19:25"},
+  {day:3, type:"live", stage:"CANDY", group:"キュン!? 恋堕ちキューピッド", start:"11:10", end:"11:25"},
+  {day:3, type:"live", stage:"CANDY", group:"恋に落ちる確率は限りなく低いが0じゃない", start:"11:25", end:"11:45"},
+  {day:3, type:"live", stage:"CANDY", group:"Lって何のLですか？", start:"11:45", end:"12:00"},
+  {day:3, type:"live", stage:"CANDY", group:"LittleSignal", start:"12:00", end:"12:15"},
+  {day:3, type:"live", stage:"CANDY", group:"Cherie!", start:"12:15", end:"12:35"},
+  {day:3, type:"live", stage:"CANDY", group:"月とソーダ", start:"12:40", end:"13:00"},
+  {day:3, type:"live", stage:"CANDY", group:"YumeLia", start:"13:00", end:"13:20"},
+  {day:3, type:"live", stage:"CANDY", group:"踊れ！神風", start:"13:20", end:"13:40"},
+  {day:3, type:"live", stage:"CANDY", group:"ネクスタリア", start:"13:40", end:"14:00"},
+  {day:3, type:"live", stage:"CANDY", group:"Krays（出演権争奪B2位）", start:"14:00", end:"14:15"},
+  {day:3, type:"live", stage:"CANDY", group:"Drug&Drop", start:"14:25", end:"14:45"},
+  {day:3, type:"live", stage:"CANDY", group:"Melty BeaR", start:"14:45", end:"15:05"},
+  {day:3, type:"live", stage:"CANDY", group:"ESTLINK☆", start:"15:05", end:"15:25"},
+  {day:3, type:"live", stage:"CANDY", group:"ポジティブモンスター", start:"15:25", end:"15:40"},
+  {day:3, type:"live", stage:"CANDY", group:"2nd season B3位", start:"15:40", end:"15:55"},
+  {day:3, type:"live", stage:"CANDY", group:"PiRiRi", start:"16:00", end:"16:20"},
+  {day:3, type:"live", stage:"CANDY", group:"SPRSE", start:"16:20", end:"16:40"},
+  {day:3, type:"live", stage:"CANDY", group:"Panic Monster !n Wonderland", start:"16:40", end:"17:00"},
+  {day:3, type:"live", stage:"CANDY", group:"17秒前の瞬きに光を", start:"17:00", end:"17:20"},
+  {day:3, type:"live", stage:"CANDY", group:"W.ダブルヴィー", start:"17:20", end:"17:40"},
+  {day:3, type:"live", stage:"CANDY", group:"ハレとハレ！", start:"17:45", end:"18:05"},
+  {day:3, type:"live", stage:"CANDY", group:"ぜろから☆すた→と", start:"18:05", end:"18:25"},
+  {day:3, type:"live", stage:"CANDY", group:"I MY ME MINE", start:"18:25", end:"18:45"},
+  {day:3, type:"live", stage:"CANDY", group:"SAI²Rium", start:"18:45", end:"19:05"},
+  {day:3, type:"live", stage:"CANDY", group:"きゅんﾀﾋに一生を!?", start:"19:05", end:"19:25"},
+
+  // 縁日タイムテーブル（画像 2026.10.30〜11.01）
+  // DAY1
+  {day:1, type:"ennichi", booth:1, group:"エイアイカ", start:"12:05", end:"13:05"},
+  {day:1, type:"ennichi", booth:1, group:"ドラマチックレコード", start:"14:00", end:"15:00"},
+  {day:1, type:"ennichi", booth:1, group:"As a Cutie Pomeranian", start:"15:35", end:"16:35"},
+  {day:1, type:"ennichi", booth:1, group:"FRESH CHARM", start:"16:50", end:"17:50", note:"イベントなし（セカンドステージ争奪戦 第2ブロック配信2位）"},
+  {day:1, type:"ennichi", booth:1, group:"Aivery", start:"18:20", end:"19:20"},
+  {day:1, type:"ennichi", booth:2, group:"ぶっとび！パンデミック", start:"12:10", end:"13:10"},
+  {day:1, type:"ennichi", booth:2, group:"AOSTARIA", start:"14:30", end:"15:30"},
+  {day:1, type:"ennichi", booth:2, group:"ちゃーむぽっしゅ", start:"15:40", end:"16:40"},
+  {day:1, type:"ennichi", booth:2, group:"フルコース", start:"16:50", end:"17:50"},
+  {day:1, type:"ennichi", booth:3, group:"Ma'Scar'Piece", start:"12:20", end:"13:20"},
+  {day:1, type:"ennichi", booth:3, group:"Malcolm Mask McLaren", start:"15:50", end:"16:50"},
+  {day:1, type:"ennichi", booth:3, group:"metarium", start:"17:10", end:"18:10"},
+  {day:1, type:"ennichi", booth:3, group:"BNSI", start:"18:35", end:"19:35"},
+  {day:1, type:"ennichi", booth:4, group:"アンスリューム", start:"12:20", end:"13:20"},
+  {day:1, type:"ennichi", booth:4, group:"グッドクルー", start:"17:10", end:"18:10"},
+  {day:1, type:"ennichi", booth:4, group:"アップアップガールズ（仮）", start:"18:35", end:"19:35"},
+  {day:1, type:"ennichi", booth:5, group:"メイビーME", start:"14:30", end:"15:30"},
+  {day:1, type:"ennichi", booth:5, group:"α+", start:"15:50", end:"16:50"},
+  {day:1, type:"ennichi", booth:5, group:"玉響storage", start:"17:10", end:"18:10", note:"セカンドステージ争奪戦 第1ブロック配信2位"},
+  {day:1, type:"ennichi", booth:6, group:"KissBee", start:"12:25", end:"13:25"},
+  {day:1, type:"ennichi", booth:6, group:"HzMe", start:"14:40", end:"15:40", note:"シール渡しのみ"},
+  {day:1, type:"ennichi", booth:6, group:"hakanai", start:"16:00", end:"17:00", note:"イベントなし"},
+  {day:1, type:"ennichi", booth:6, group:"RePLAY", start:"18:55", end:"19:55"},
+  {day:1, type:"ennichi", booth:7, group:"ラビットビット", start:"12:25", end:"13:25"},
+  {day:1, type:"ennichi", booth:7, group:"LillyS/ash", start:"14:40", end:"15:40"},
+  {day:1, type:"ennichi", booth:7, group:"MeIMI", start:"18:55", end:"19:55", note:"セカンドステージ争奪戦 第1ブロック配信5位"},
+  {day:1, type:"ennichi", booth:8, group:"HelloYouth", start:"12:45", end:"13:45"},
+  {day:1, type:"ennichi", booth:8, group:"Palette Parade", start:"14:40", end:"15:40", note:"イベントなし"},
+  {day:1, type:"ennichi", booth:8, group:"キングサリ", start:"16:00", end:"17:00"},
+  {day:1, type:"ennichi", booth:8, group:"LinQ", start:"19:00", end:"20:00", note:"イベントなし"},
+  {day:1, type:"ennichi", booth:9, group:"Falench.", start:"12:45", end:"13:45", note:"セカンドステージ争奪戦 第1ブロック配信3位"},
+  {day:1, type:"ennichi", booth:9, group:"buGG", start:"16:05", end:"17:05"},
+  {day:1, type:"ennichi", booth:9, group:"Maison de Queen", start:"17:20", end:"18:20"},
+  {day:1, type:"ennichi", booth:9, group:"selfish", start:"19:00", end:"20:00"},
+  {day:1, type:"ennichi", booth:10, group:"アキシブproject", start:"14:30", end:"15:30"},
+  {day:1, type:"ennichi", booth:10, group:"AQA", start:"16:05", end:"17:05", note:"セカンドステージ争奪戦 第2ブロック配信1位"},
+  {day:1, type:"ennichi", booth:10, group:"こみっきゅおん！", start:"17:20", end:"18:20"},
+  {day:1, type:"ennichi", booth:10, group:"XINXIN", start:"19:15", end:"20:15"},
+  {day:1, type:"ennichi", booth:11, group:"なんキニ！", start:"14:55", end:"15:55"},
+  {day:1, type:"ennichi", booth:11, group:"iCON!", start:"16:05", end:"17:05", note:"セカンドステージ争奪戦 第2ブロック配信4位"},
+  {day:1, type:"ennichi", booth:11, group:"UtaGe!", start:"17:30", end:"18:30"},
+  {day:1, type:"ennichi", booth:11, group:"ネコプラpixx.", start:"19:15", end:"20:15", note:"セカンドステージ争奪戦 第2ブロック配信5位"},
+  {day:1, type:"ennichi", booth:12, group:"江籠裕奈", start:"12:45", end:"13:45"},
+  {day:1, type:"ennichi", booth:12, group:"unFinale Tokyo", start:"16:15", end:"17:15"},
+  {day:1, type:"ennichi", booth:12, group:"KAMAITACI", start:"17:35", end:"18:35"},
+  {day:1, type:"ennichi", booth:13, group:"SAISON", start:"13:05", end:"14:05"},
+  {day:1, type:"ennichi", booth:13, group:"ルシフェルの園。", start:"14:55", end:"15:55"},
+  {day:1, type:"ennichi", booth:13, group:"HIBANA", start:"16:25", end:"17:25"},
+  {day:1, type:"ennichi", booth:14, group:"COLOR of COLOR", start:"13:05", end:"14:05", note:"セカンドステージ争奪戦 第2ブロック配信5位"},
+  {day:1, type:"ennichi", booth:14, group:"STARRY×NIGHT↗", start:"15:00", end:"16:00"},
+  {day:1, type:"ennichi", booth:14, group:"MEOWMEW", start:"17:40", end:"18:40"},
+  {day:1, type:"ennichi", booth:14, group:"PIAGRIM", start:"19:35", end:"20:35"},
+  {day:1, type:"ennichi", booth:15, group:"FES☆TIVE", start:"13:10", end:"14:10"},
+  {day:1, type:"ennichi", booth:15, group:"Lily scale", start:"15:10", end:"16:10"},
+  {day:1, type:"ennichi", booth:15, group:"WASURENA", start:"17:40", end:"18:40", note:"セカンドステージ争奪戦 第2ブロック配信7位"},
+  {day:1, type:"ennichi", booth:15, group:"夜とメルク", start:"19:35", end:"20:35", note:"セカンドステージ争奪戦 第1ブロック配信4位"},
+  {day:1, type:"ennichi", booth:16, group:"NO FRAME", start:"13:30", end:"14:30", note:"セカンドステージ争奪戦 第1ブロック配信7位"},
+  {day:1, type:"ennichi", booth:16, group:"踊れ！神風", start:"15:15", end:"16:15"},
+  {day:1, type:"ennichi", booth:16, group:"Lollipop♡CHU", start:"16:30", end:"17:30", note:"セカンドステージ争奪戦 第1ブロック配信3位"},
+  {day:1, type:"ennichi", booth:16, group:"Aerolipop", start:"17:50", end:"18:50", note:"セカンドステージ争奪戦 第1ブロック配信1位"},
+  {day:1, type:"ennichi", booth:17, group:"FULIT BOX", start:"15:20", end:"16:20"},
+  {day:1, type:"ennichi", booth:17, group:"SEKAIE☆", start:"16:50", end:"17:50"},
+  {day:1, type:"ennichi", booth:17, group:"オカシリゾート", start:"18:20", end:"19:20", note:"セカンドステージ争奪戦 第2ブロック配信6位"},
+  {day:1, type:"ennichi", booth:18, group:"コングラッチェ！", start:"13:40", end:"14:40"},
+  {day:1, type:"ennichi", booth:18, group:"びっくえんじぇる", start:"15:20", end:"16:20"},
+  {day:1, type:"ennichi", booth:18, group:"パラディーク", start:"16:40", end:"17:40"},
+  {day:1, type:"ennichi", booth:18, group:"Chuu♡Cute", start:"18:00", end:"19:00"},
+  {day:1, type:"ennichi", booth:19, group:"ラナキュラ", start:"13:40", end:"14:40"},
+  {day:1, type:"ennichi", booth:19, group:"feelNEO", start:"16:50", end:"17:50"},
+  {day:1, type:"ennichi", booth:19, group:"ルルネージュ", start:"18:00", end:"19:00", note:"セカンドステージ争奪戦 第1ブロック配信6位"},
+  {day:1, type:"ennichi", booth:20, group:"LIE LILLIE", start:"15:30", end:"16:30"},
+  {day:1, type:"ennichi", booth:20, group:"アルテミスの翼", start:"16:50", end:"17:50"},
+  {day:1, type:"ennichi", booth:20, group:"紅色の飛行少女", start:"18:00", end:"19:00"},
+  // DAY2
+  {day:2, type:"ennichi", booth:1, group:"玉響storage", start:"11:05", end:"12:05", note:"2nd season Aブロック2位"},
+  {day:2, type:"ennichi", booth:1, group:"まねきケチャ", start:"15:05", end:"16:05", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:1, group:"ParaLulu", start:"16:25", end:"17:25"},
+  {day:2, type:"ennichi", booth:1, group:"君のメインヒロイン", start:"18:45", end:"19:45"},
+  {day:2, type:"ennichi", booth:2, group:"わんふぁす！", start:"11:15", end:"12:15", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:2, group:"ワガママなラストノート", start:"13:40", end:"14:40"},
+  {day:2, type:"ennichi", booth:2, group:"myojou", start:"15:25", end:"16:25"},
+  {day:2, type:"ennichi", booth:2, group:"なんキニ！", start:"16:35", end:"17:35"},
+  {day:2, type:"ennichi", booth:3, group:"にっぽん！真骨頂", start:"13:45", end:"14:45"},
+  {day:2, type:"ennichi", booth:3, group:"すべての瞬間は君だった。", start:"15:25", end:"16:25"},
+  {day:2, type:"ennichi", booth:3, group:"THE ENCORE", start:"16:45", end:"17:45"},
+  {day:2, type:"ennichi", booth:4, group:"LOVE CHANT", start:"13:50", end:"14:50", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:4, group:"月とソーダ", start:"16:45", end:"17:45"},
+  {day:2, type:"ennichi", booth:5, group:"ラナキュラ", start:"11:20", end:"12:20"},
+  {day:2, type:"ennichi", booth:5, group:"HelloYouth", start:"13:55", end:"14:55"},
+  {day:2, type:"ennichi", booth:5, group:"パラディーク", start:"16:10", end:"17:10"},
+  {day:2, type:"ennichi", booth:6, group:"BUNGEE GUM.", start:"11:35", end:"12:35"},
+  {day:2, type:"ennichi", booth:6, group:"強がりセンセーション", start:"16:50", end:"17:50"},
+  {day:2, type:"ennichi", booth:7, group:"いつかの夜に僕たちが、", start:"11:45", end:"12:45", note:"シール渡しのみ"},
+  {day:2, type:"ennichi", booth:7, group:"こみっきゅおん！", start:"15:40", end:"16:40"},
+  {day:2, type:"ennichi", booth:8, group:"シンデレラ宣言！", start:"11:45", end:"12:45"},
+  {day:2, type:"ennichi", booth:8, group:"トウトイナ。", start:"14:05", end:"15:05", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:8, group:"ちゃーむぽっしゅ", start:"17:00", end:"18:00"},
+  {day:2, type:"ennichi", booth:9, group:"アイテムはてるてるのみ", start:"11:55", end:"12:55"},
+  {day:2, type:"ennichi", booth:9, group:"衛星とカラテア", start:"14:15", end:"15:15"},
+  {day:2, type:"ennichi", booth:9, group:"キングサリ", start:"17:00", end:"18:00"},
+  {day:2, type:"ennichi", booth:10, group:"メイビーME", start:"12:30", end:"13:30"},
+  {day:2, type:"ennichi", booth:10, group:"BabyDoll", start:"14:20", end:"15:20"},
+  {day:2, type:"ennichi", booth:10, group:"My Dresscode", start:"15:50", end:"16:50"},
+  {day:2, type:"ennichi", booth:10, group:"feelNEO", start:"17:10", end:"18:10"},
+  {day:2, type:"ennichi", booth:11, group:"α+", start:"12:40", end:"13:40"},
+  {day:2, type:"ennichi", booth:11, group:"かすみ草とステラ", start:"15:50", end:"16:50"},
+  {day:2, type:"ennichi", booth:12, group:"ON THE AIR", start:"12:50", end:"13:50"},
+  {day:2, type:"ennichi", booth:12, group:"Aerolipop", start:"14:30", end:"15:30", note:"2nd season Aブロック1位"},
+  {day:2, type:"ennichi", booth:13, group:"ベンジャス！", start:"13:15", end:"14:15", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:13, group:"腐なるプレリュード", start:"14:30", end:"15:30"},
+  {day:2, type:"ennichi", booth:13, group:"マリークラウン", start:"15:50", end:"16:50"},
+  {day:2, type:"ennichi", booth:13, group:"マジカル・パンチライン", start:"17:35", end:"18:35", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:14, group:"太陽と踊れ月夜に唄え", start:"12:00", end:"13:00"},
+  {day:2, type:"ennichi", booth:14, group:"有頂天メリー", start:"13:25", end:"14:25"},
+  {day:2, type:"ennichi", booth:14, group:"SUPER JYAPON", start:"14:45", end:"15:45", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:14, group:"Lollipop♡CHU", start:"17:40", end:"18:40", note:"2nd season A3位"},
+  {day:2, type:"ennichi", booth:15, group:"Bunny La Crew", start:"13:30", end:"14:30", note:"イベントなし"},
+  {day:2, type:"ennichi", booth:15, group:"グッドクルー", start:"14:50", end:"15:50"},
+  {day:2, type:"ennichi", booth:15, group:"BANKURUWASE!!", start:"16:00", end:"17:00"},
+  {day:2, type:"ennichi", booth:15, group:"Malcolm Mask McLaren", start:"17:55", end:"18:55"},
+  {day:2, type:"ennichi", booth:16, group:"himawari(船橋)", start:"13:30", end:"14:30"},
+  {day:2, type:"ennichi", booth:16, group:"RiNCENT♯", start:"15:00", end:"16:00"},
+  {day:2, type:"ennichi", booth:17, group:"アキシブproject", start:"16:50", end:"17:50"},
+  {day:2, type:"ennichi", booth:17, group:"MAGICAL SPEC", start:"18:00", end:"19:00"},
+  {day:2, type:"ennichi", booth:18, group:"フルコース", start:"11:20", end:"12:20"},
+  {day:2, type:"ennichi", booth:18, group:"&CUTE", start:"18:15", end:"19:15"},
+  {day:2, type:"ennichi", booth:19, group:"すてねこキャッツ", start:"13:35", end:"14:35"},
+  {day:2, type:"ennichi", booth:19, group:"フューチャーサイダー", start:"15:00", end:"16:00"},
+  {day:2, type:"ennichi", booth:20, group:"STAiNY", start:"13:40", end:"14:40"},
+  {day:2, type:"ennichi", booth:20, group:"びっくえんじぇる", start:"15:05", end:"16:05"},
+  {day:2, type:"ennichi", booth:20, group:"PIAGRIM", start:"18:35", end:"19:35"},
+  // DAY3
+  {day:3, type:"ennichi", booth:1, group:"はぐっと！", start:"11:05", end:"12:05"},
+  {day:3, type:"ennichi", booth:1, group:"THE ENCORE", start:"13:30", end:"14:30"},
+  {day:3, type:"ennichi", booth:1, group:"OS☆U", start:"14:50", end:"15:50"},
+  {day:3, type:"ennichi", booth:1, group:"ハレとハレ！", start:"16:15", end:"17:15"},
+  {day:3, type:"ennichi", booth:2, group:"月とソーダ", start:"11:10", end:"12:10"},
+  {day:3, type:"ennichi", booth:2, group:"AQA", start:"16:20", end:"17:20", note:"2nd season Bブロック1位"},
+  {day:3, type:"ennichi", booth:2, group:"メインステージ争奪戦3位", start:"17:35", end:"18:35"},
+  {day:3, type:"ennichi", booth:3, group:"MAGICAL SPEC", start:"11:20", end:"12:20"},
+  {day:3, type:"ennichi", booth:3, group:"恋に落ちる確率は限りなく低いが0じゃない", start:"13:45", end:"14:45"},
+  {day:3, type:"ennichi", booth:3, group:"AZATOY", start:"16:20", end:"17:20", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:3, group:"メインステージ争奪戦5位", start:"17:35", end:"18:35"},
+  {day:3, type:"ennichi", booth:4, group:"THE PINK MINDS", start:"15:00", end:"16:00"},
+  {day:3, type:"ennichi", booth:4, group:"Root mimi", start:"16:20", end:"17:20"},
+  {day:3, type:"ennichi", booth:4, group:"メインステージ争奪戦7位", start:"17:35", end:"18:35"},
+  {day:3, type:"ennichi", booth:5, group:"愛乙女★DOLL", start:"11:20", end:"12:20"},
+  {day:3, type:"ennichi", booth:5, group:"いつかの夜に僕たちが、", start:"13:55", end:"14:55", note:"シール渡しのみ"},
+  {day:3, type:"ennichi", booth:5, group:"Panic Monster !n Wonderland", start:"15:10", end:"16:10"},
+  {day:3, type:"ennichi", booth:5, group:"ワンダーウィード天", start:"16:20", end:"17:20"},
+  {day:3, type:"ennichi", booth:5, group:"ポジティブモンスター", start:"17:40", end:"18:40"},
+  {day:3, type:"ennichi", booth:6, group:"YumeLia", start:"11:30", end:"12:30"},
+  {day:3, type:"ennichi", booth:6, group:"ジエメイ", start:"13:55", end:"14:55", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:6, group:"Bibbidi Chu", start:"16:35", end:"17:35"},
+  {day:3, type:"ennichi", booth:6, group:"メインステージ争奪戦9位", start:"17:55", end:"18:55"},
+  {day:3, type:"ennichi", booth:7, group:"きゅんﾀﾋに一生を!?", start:"15:20", end:"16:20"},
+  {day:3, type:"ennichi", booth:7, group:"ぜろから☆すた→と", start:"16:35", end:"17:35"},
+  {day:3, type:"ennichi", booth:7, group:"FRESH CHARM", start:"18:00", end:"19:00", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:8, group:"Lって何のLですか？", start:"14:00", end:"15:00"},
+  {day:3, type:"ennichi", booth:8, group:"コングラッチェ！", start:"15:20", end:"16:20"},
+  {day:3, type:"ennichi", booth:8, group:"Drug&Drop", start:"16:45", end:"17:45"},
+  {day:3, type:"ennichi", booth:8, group:"AKANECLUB.", start:"18:00", end:"19:00"},
+  {day:3, type:"ennichi", booth:9, group:"踊れ！神風", start:"11:50", end:"12:50"},
+  {day:3, type:"ennichi", booth:9, group:"Merry BAD TUNE.", start:"14:00", end:"15:00"},
+  {day:3, type:"ennichi", booth:9, group:"ファーストプレイリスト", start:"15:25", end:"16:25"},
+  {day:3, type:"ennichi", booth:10, group:"フルコース", start:"11:20", end:"12:20"},
+  {day:3, type:"ennichi", booth:10, group:"17秒前の瞬きに光を", start:"15:30", end:"16:30"},
+  {day:3, type:"ennichi", booth:10, group:"花いろは", start:"16:45", end:"17:45"},
+  {day:3, type:"ennichi", booth:10, group:"メインステージ争奪戦8位", start:"18:15", end:"19:15"},
+  {day:3, type:"ennichi", booth:11, group:"アイドルカレッジ", start:"12:15", end:"13:15"},
+  {day:3, type:"ennichi", booth:11, group:"メインステージ争奪戦1位", start:"14:05", end:"15:05"},
+  {day:3, type:"ennichi", booth:11, group:"I MY ME MINE", start:"16:55", end:"17:55"},
+  {day:3, type:"ennichi", booth:11, group:"PiRiRi", start:"18:20", end:"19:20"},
+  {day:3, type:"ennichi", booth:12, group:"Krays", start:"12:30", end:"13:30", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:12, group:"アオノシグナル", start:"14:10", end:"15:10", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:12, group:"NANIMONO", start:"15:40", end:"16:40", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:12, group:"MixVeil", start:"17:00", end:"18:00"},
+  {day:3, type:"ennichi", booth:12, group:"かすみ草とステラ", start:"18:25", end:"19:25"},
+  {day:3, type:"ennichi", booth:13, group:"Sophià la Mode", start:"12:40", end:"13:40"},
+  {day:3, type:"ennichi", booth:13, group:"LittleSignal", start:"14:15", end:"15:15"},
+  {day:3, type:"ennichi", booth:13, group:"すべての瞬間は君だった。", start:"15:40", end:"16:40"},
+  {day:3, type:"ennichi", booth:13, group:"Peel the Apple", start:"17:00", end:"18:00"},
+  {day:3, type:"ennichi", booth:14, group:"パラディーク", start:"12:40", end:"13:40"},
+  {day:3, type:"ennichi", booth:14, group:"SPRISE", start:"14:40", end:"15:40"},
+  {day:3, type:"ennichi", booth:14, group:"Melty BeaR", start:"17:05", end:"18:05"},
+  {day:3, type:"ennichi", booth:15, group:"Luce Twinkle Wink☆", start:"15:50", end:"16:50"},
+  {day:3, type:"ennichi", booth:15, group:"MATE×MATE!", start:"17:00", end:"18:00"},
+  {day:3, type:"ennichi", booth:16, group:"AsIs", start:"14:30", end:"15:30", note:"イベントなし"},
+  {day:3, type:"ennichi", booth:16, group:"W.ダブルヴィー", start:"15:50", end:"16:50"},
+  {day:3, type:"ennichi", booth:16, group:"SAI²Rium", start:"17:15", end:"18:15"},
+  {day:3, type:"ennichi", booth:16, group:"buGG", start:"18:55", end:"19:55"},
+  {day:3, type:"ennichi", booth:17, group:"最終未来少女", start:"14:30", end:"15:30"},
+  {day:3, type:"ennichi", booth:17, group:"ネクスタリア", start:"16:00", end:"17:00"},
+  {day:3, type:"ennichi", booth:17, group:"絶対少女", start:"17:15", end:"18:15"},
+  {day:3, type:"ennichi", booth:17, group:"メインステージ争奪戦2位", start:"18:55", end:"19:55"},
+  {day:3, type:"ennichi", booth:18, group:"キュン!?恋堕ちキューピッド", start:"13:25", end:"14:25"},
+  {day:3, type:"ennichi", booth:18, group:"Lumiétoile", start:"14:35", end:"15:35"},
+  {day:3, type:"ennichi", booth:18, group:"メインステージ争奪戦4位", start:"18:55", end:"19:55"},
+  {day:3, type:"ennichi", booth:19, group:"INUWASI", start:"13:30", end:"14:30"},
+  {day:3, type:"ennichi", booth:19, group:"Cherie!", start:"14:40", end:"15:40"},
+  {day:3, type:"ennichi", booth:19, group:"アキシブproject", start:"16:10", end:"17:10"},
+  {day:3, type:"ennichi", booth:19, group:"メインステージ争奪戦6位", start:"18:55", end:"19:55"},
+  {day:3, type:"ennichi", booth:20, group:"One Last Bloom", start:"13:30", end:"14:30"},
+  {day:3, type:"ennichi", booth:20, group:"metarium", start:"14:40", end:"15:40"},
+  {day:3, type:"ennichi", booth:20, group:"ESTLINK☆", start:"17:25", end:"18:25", note:"イベントなし"},
+];
+
+let currentDay = "all";
+let currentType = "all";
+let currentStage = "all";
+let showMySchedule = false;
+let selected = JSON.parse(localStorage.getItem("ihj2026_selected") || "[]");
+
+// 新旧のライブ変更履歴（ユーザーの★選択引き継ぎ用）
+const oldLiveSelections = [
+  [1, "Secret Pinky", "13:55", "Secret Pinky", "12:15"],
+  [1, "ラビットビット", "12:15", "ラビットビット", "13:55"],
+  [1, "Ill", "15:10", "III", "15:10"],
+  [2, "Ill", "17:00", "III", "17:50"],
+  [2, "III", "17:00", "III", "17:50"],
+  [2, "THE ENCORE", "17:50", "THE ENCORE", "18:10"],
+  [2, "feelNEO", "18:15", "feelNEO", "18:40"],
+  [2, "ドラマチックレコード", "18:40", "ドラマチックレコード", "19:05"],
+  // DAY1 CANDY: 仮の順位表記から新しい出演者名へ更新
+  [1, "セカンドステージ争奪戦 第1ブロック 配信8位", "14:15", "Falench.", "14:15"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信8位", "14:35", "COLOR of COLOR", "14:35"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信7位", "15:00", "NO FRAME", "15:00"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信7位", "15:20", "WASURENA", "15:20"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信6位", "15:40", "ルルネージュ", "15:40"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信6位", "16:00", "オカシリゾート", "16:00"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信5位", "16:35", "MeIMI", "16:35"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信5位", "16:55", "ネコプラpixx.", "16:55"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信4位", "17:15", "夜とメルク", "17:15"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信4位", "17:35", "iCON!", "17:35"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信3位", "18:00", "Lollipop♡CHU", "18:00"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信3位", "18:20", "FRESH CHARM", "18:20"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信2位", "18:40", "玉響storage", "18:40"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信2位", "19:05", "パラディーク", "19:05"],
+  [1, "セカンドステージ争奪戦 第1ブロック 配信1位", "19:25", "Aerolipop", "19:25"],
+  [1, "セカンドステージ争奪戦 第2ブロック 配信1位", "19:45", "AQA", "19:45"]
+];
+// 保存済みの★選択を最新版の出演データと照合して引き継ぐ。
+// 旧タイテによる同名複数枠は、開始時刻が最も近い枠を優先する。
+const nameAliases = {
+  'IMINI':'iMIN!', 'Ill':'III', '可愛なアイポリー':'可憐なアイボリー',
+  'アンスリウム':'アンスリューム', 'ぷっとび！パンダミック':'ぶっとび！パンデミック',
+  '黒れ！神風':'踊れ！神風', 'ルシフェルの庭。':'ルシフェルの園。',
+  'LittelSignal':'LittleSignal', 'マリーグラウン':'マリークラウン',
+  'グッドクルー':'グットクルー', 'うゆきさな':'うゆさきな', 'きゃんりに一生を!?':'きゅんﾀﾋに一生を!?',
+  'きゅんみに一生を!?':'きゅんﾀﾋに一生を!?', 'ぜろから☆すたーと':'ぜろから☆すた→と',
+  'himawari(東雲)':'himawari(船橋)', 'himawari（稲場）':'himawari(船橋)',
+  'Sophia laMode':'Sophià la Mode', 'STARRY☆NIGHT':'STARRY×NIGHT↗',
+  '君と女★DOLL':'愛乙女★DOLL', 'MATE+MATE!':'MATE×MATE!', 'Alvery':'Aivery',
+  'PIRIRI':'PiRiRi', 'Panic Monster In Wonderland':'Panic Monster !n Wonderland',
+};
+function minutesOf(time) {
+  if (!/^\d\d:\d\d$/.test(time || '')) return 99999;
+  const [h,m]=time.split(':').map(Number); return h*60+m;
+}
+function nameForMigration(name) {
+  return nameAliases[name] || name;
+}
+function migratedSelection(saved) {
+  const kind=saved.type || 'tokuten';
+  const mapped = (kind === 'live' ? oldLiveSelections.find(([day,oldGroup,oldStart]) =>
+    saved.day === day && saved.group === oldGroup && saved.start === oldStart) : null);
+  const wantedName=mapped ? mapped[3] : nameForMigration(saved.group);
+  const wantedTime=mapped ? mapped[4] : saved.start;
+  const sameDay=schedule.filter(s => s.day===saved.day && s.type===kind && s.group===wantedName);
+  if (!sameDay.length) return saved;
+  const exact=sameDay.find(s=>s.start===wantedTime);
+  if (exact) return exact;
+  sameDay.sort((a,b)=>Math.abs(minutesOf(a.start)-minutesOf(wantedTime))-
+    Math.abs(minutesOf(b.start)-minutesOf(wantedTime)));
+  return sameDay[0];
+}
+const oldSelected=JSON.stringify(selected);
+selected=selected.filter(s => s.group !== "HEROINES（詳細後日発表）").map(migratedSelection).filter((s,idx,all)=>all.findIndex(x=>
+  x.day===s.day && x.group===s.group && x.start===s.start && (x.type||'tokuten')===(s.type||'tokuten'))===idx);
+if (JSON.stringify(selected)!==oldSelected) localStorage.setItem('ihj2026_selected',JSON.stringify(selected));
+
+const searchInput = document.getElementById("search");
+const resultsDiv = document.getElementById("results");
+const countDiv = document.getElementById("count");
+const dayButtons = document.querySelectorAll("button[data-day]");
+const typeButtons = document.querySelectorAll("button[data-type]");
+const stageButtons = document.querySelectorAll("button[data-stage]");
+const stageFilter = document.getElementById("stageFilter");
+const myScheduleBtn = document.getElementById("myScheduleBtn");
+const clearSelectedBtn = document.getElementById("clearSelectedBtn");
+const timeFromInput = document.getElementById("timeFrom");
+const timeToInput = document.getElementById("timeTo");
+const timeClearBtn = document.getElementById("timeClearBtn");
+const timeResetBtn = document.getElementById("timeResetBtn");
+// 全日程 11:00〜21:00、DAY1 12:00〜21:00、DAY2/3 11:00〜21:00。
+const eventStartTime = day => String(day) === "1" ? "12:00" : "11:00";
+const eventEndTime = "21:00";
+let timeInputMode = "auto"; // auto / custom / cleared
+function setEventTimeDefaults() {
+  timeFromInput.value = eventStartTime(currentDay);
+  timeToInput.value = eventEndTime;
+  timeInputMode = "auto";
+}
+function normalizedTime(raw, allowHoursOnly=false) {
+  const full = String(raw||"").trim().replace(/[０-９]/g,ch=>String(ch.charCodeAt(0)-65296)).replace(/：/g,":");
+  let h,m;
+  if (/^\d{1,2}:\d{1,2}$/.test(full)) [h,m] = full.split(":").map(Number);
+  else if (/^\d{3,4}$/.test(full)) {h=Number(full.slice(0,-2));m=Number(full.slice(-2));}
+  else if (allowHoursOnly && /^\d{1,2}$/.test(full)) {h=Number(full);m=0;}
+  else return null;
+  return Number.isInteger(h) && Number.isInteger(m) && h>=0 && h<24 && m>=0 && m<60
+    ? `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}` : null;
+}
+// 手入力では数字を4桁まで許可（区切りのコロンを除く）。
+// 入力途中は空欄や「1」「14:」も保持し、確定時にだけ HH:MM に整える。
+// 時刻以外の文字が入ったら、"null" という文字列ではなく空欄に戻す。
+function sanitizeTimeDraft(input) {
+  const raw = input.value.normalize("NFKC").trim();
+  if (!raw) { input.value = ""; return; }
+  const digits = raw.match(/\d/g) || [];
+  const isDigitsOnly = /^\d+$/.test(raw);
+  if (isDigitsOnly && digits.length > 4) {
+    input.value = raw.slice(0, 4);
+    return;
+  }
+  const colons = (raw.match(/:/g) || []).length;
+  const validDraft = colons === 0 ? /^\d{1,4}$/.test(raw)
+    : colons === 1 && /^\d{1,2}:\d{0,2}$/.test(raw);
+  if (!validDraft) { input.value = ""; return; }
+  // 数値として4桁まで揃ったとき、実在しない時刻を確定させない。
+  if ((/^\d{4}$/.test(raw) || /^\d{1,2}:\d{2}$/.test(raw)) && !normalizedTime(raw)) {
+    input.value = "";
+    return;
+  }
+  input.value = raw;
+}
+function commitTimeField(input) {
+  sanitizeTimeDraft(input);
+  const raw=input.value.trim();
+  if (!raw) {input.value="";return true;}
+  const formatted=normalizedTime(raw,true);
+  if (!formatted) {
+    input.value="";
+    return false;
+  }
+  input.value=formatted;
+  return true;
+}
+function validTimeOf(input) {
+  // 入力途中は不正な値を判定に使わない。
+  return normalizedTime(input.value, false);
+}
+setEventTimeDefaults();
+const timeStatus = document.getElementById("timeSearchStatus");
+
+// 時間帯を「半開区間 [開始,終了)」として判定する。
+// 17:00〜18:00 と 18:00〜18:30 は重複しない。
+function toMinutes(time) {
+  if (typeof time !== "string" || !/^\d{2}:\d{2}$/.test(time)) return null;
+  const [hours,minutes] = time.split(":").map(Number);
+  return hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60 ? hours*60+minutes : null;
+}
+function formatMinutes(minutes) {
+  return `${String(Math.floor(minutes/60)).padStart(2,"0")}:${String(minutes%60).padStart(2,"0")}`;
+}
+function slotKey(s) {
+  return [s.day, s.type || "tokuten", s.group, s.start].join("|");
+}
+function overlapMinutes(a,b) {
+  if (a.day !== b.day) return 0;
+  const as=toMinutes(a.start), ae=toMinutes(a.end), bs=toMinutes(b.start), be=toMinutes(b.end);
+  if ([as,ae,bs,be].some(v=>v===null) || ae<=as || be<=bs) return 0;
+  return Math.max(0,Math.min(ae,be)-Math.max(as,bs));
+}
+function selectedConflicts(items) {
+  const pairs=[];
+  for (let i=0;i<items.length;i++) for (let j=i+1;j<items.length;j++) {
+    if(slotKey(items[i]) === slotKey(items[j])) continue;
+    const mins=overlapMinutes(items[i],items[j]);
+    if (mins>0) {
+      pairs.push({a:items[i],b:items[j],minutes:mins,
+        start:formatMinutes(Math.max(toMinutes(items[i].start),toMinutes(items[j].start))),
+        end:formatMinutes(Math.min(toMinutes(items[i].end),toMinutes(items[j].end)))});
+    }
+  }
+  return pairs.sort((x,y)=>x.a.day-y.a.day || x.start.localeCompare(y.start));
+}
+function conflictsFor(item,pairs) {
+  return pairs.filter(p=>slotKey(p.a)===slotKey(item) || slotKey(p.b)===slotKey(item));
+}
+function matchedTime(s) {
+  const fromStr=validTimeOf(timeFromInput), toStr=validTimeOf(timeToInput);
+  const from=toMinutes(fromStr), to=toMinutes(toStr);
+  const a=toMinutes(s.start), b=toMinutes(s.end);
+  if(a===null || b===null || b<=a) return !fromStr && !toStr;
+  if(from===null && to===null) return true;
+  if(from!==null && to===null) return a<=from && from<b;
+  if(from===null && to!==null) return a<to;
+  if(to<from) return false;
+  if(from===to) return a<=from && from<b;
+  return a<to && from<b;
+}
+function updateTimeStatus() {
+  const from=validTimeOf(timeFromInput), to=validTimeOf(timeToInput);
+  const start=toMinutes(from),end=toMinutes(to);
+  timeStatus.classList.remove("error");
+  if ((timeFromInput.value && !from) || (timeToInput.value && !to)) {
+    timeStatus.textContent="時刻は4桁の数字（例：1400）または14:00形式で入力してください。";
+    timeStatus.classList.add("error");
+  } else if (from && to && end<start) {
+    timeStatus.textContent="終了時刻は開始時刻以降に設定してください。";
+    timeStatus.classList.add("error");
+  } else if (from && to && from===to) {
+    timeStatus.textContent=`${from}に実施中の予定を表示しています。`;
+  } else if (from && to) {
+    timeStatus.textContent=`${from}〜${to}に重なる予定を表示しています（終了時刻ちょうどから始まる予定は除外）。`;
+  } else if (from) {
+    timeStatus.textContent=`${from}に実施中の予定を表示しています。`;
+  } else if (to) {
+    timeStatus.textContent=`${to}より前に始まる予定を表示しています。`;
+  } else {
+    timeStatus.textContent="時間指定なし：すべての予定を表示しています。";
+  }
+}
+function syncFilters() {
+  dayButtons.forEach(btn=>btn.classList.toggle("active", btn.dataset.day === currentDay));
+  typeButtons.forEach(btn=>btn.classList.toggle("active", btn.dataset.type === currentType));
+  stageButtons.forEach(btn => {
+    const chosen = btn.dataset.stage === currentStage;
+    btn.classList.toggle("active", chosen);
+    btn.setAttribute("aria-pressed", String(chosen));
+  });
+  stageFilter.hidden = showMySchedule || (currentType !== "all" && currentType !== "live");
+}
+function clearTime() {
+  timeFromInput.value="";
+  timeToInput.value="";
+  timeInputMode="cleared";
+  updateTimeStatus();
+}
+
+
+function saveSelected() {
+  localStorage.setItem("ihj2026_selected", JSON.stringify(selected));
+}
+
+function isSelected(s) {
+  return selected.some(sel => 
+    sel.day === s.day && 
+    sel.group === s.group && 
+    sel.start === s.start && 
+    (sel.type || "tokuten") === (s.type || "tokuten")
+  );
+}
+
+function toggleSelect(s) {
+  const idx = selected.findIndex(sel => 
+    sel.day === s.day && 
+    sel.group === s.group && 
+    sel.start === s.start &&
+    (sel.type || "tokuten") === (s.type || "tokuten")
+  );
+  if (idx >= 0) {
+    selected.splice(idx, 1);
+  } else {
+    selected.push(s);
+  }
+  saveSelected();
+  render();
+}
+
+// ユーザー提供のDAY2・DAY3特典会参加券申込先
+function ilifeNote(s) {
+  if (s.type !== "tokuten" || s.group !== "iLiFE!" || ![2,3].includes(s.day)) return "";
+  const queueTime = s.day === 2 ? "16:30" : "16:40";
+  const ticketUrl = s.day === 2 ? "https://ticketdive.com/event/H76jVSPHJNKiAsNOX1vX" : "https://ticketdive.com/event/hKebKNm7zUqql8XnxWuk";
+  return `<details class="ilife-note">
+    <summary>⚠️ iLiFE! 特典会の参加条件・注意事項を見る</summary>
+    <div class="ilife-note-content">
+      <p><span class="important">整列予定：${queueTime}</span> ／ 特典会 ${s.start}〜${s.end}</p>
+      <p>参加には別途<strong>「特典会参加券」</strong>が必要です。</p>
+      <p>特典会場所の詳細は公式スタッフX <a href="https://x.com/iLiFE_STAFF" target="_blank" rel="noopener noreferrer">@iLiFE_STAFF</a> から改めて案内予定です。</p>
+      <p><strong>DAY${s.day} 特典会参加券申込先</strong>：<a href="${ticketUrl}" target="_blank" rel="noopener noreferrer">TicketDiveで申し込む</a></p>
+      <p><strong>特典会待機整理券について</strong>：特典会時間に余裕があった場合のみ案内される整理券です。ご案内・撮影の保証はありません。</p>
+      <p>案内の可否やタイミングは当日の進行・混雑状況に応じてスタッフが判断します。これらに同意できる方のみ<strong>第2希望</strong>としてご選択ください。</p>
+    </div>
+  </details>`;
+}
+
+function itemLocation(s, compact=false) {
+  if (s.type === "live") return (compact ? "🎤 " : "🎤ステージ ") + s.stage;
+  if (s.type === "ennichi") return (compact ? "🎯縁日" : "🎯 縁日ブース") + s.booth;
+  if (s.heroines && s.booth === "27〜30") return compact ? "📸ブース27〜30" : "📸 特典会ブース27〜30（個別番号未掲載）";
+  return (compact ? "📸ブース" : "📸 特典会ブース") + (s.booth || "");
+}
+function itemKind(s) {
+  return s.type === "live" ? "🎤ライブ" : s.type === "ennichi" ? "🎯縁日" : "📸特典会";
+}
+function displayGroup(s) {
+  return s.group + (s.note ? '（' + s.note + '）' : '');
+}
+// 検索用の表記ゆれを統一。ひらがな・カタカナ・全角英数字を同じものとして検索。
+function normalize(str) {
+  return String(str ?? "").normalize("NFKC").toLowerCase()
+    .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[☆★♡♥・\s\u3000'’‘"“”.,，。!！?？:：／/\()（）\[\]【】「」『』～〜~_\-+＃#@＠&＆×♯↗]/g, "");
+}
+
+// 読み仮名・通称は検索専用。公式タイテに掲載されたグループ名は変更しない。
+const groupReadingAliases = {
+  "FES☆TIVE": [
+    "フェスティブ"
+  ],
+  "log you": [
+    "ログユー"
+  ],
+  "REIRIE": [
+    "レイリエ",
+    "レイリー"
+  ],
+  "UtaGe!": [
+    "ウタゲ"
+  ],
+  "Onephony": [
+    "ワンフォニー"
+  ],
+  "KAWAII LAB. MATES": [
+    "カワイイラボメイツ",
+    "カワラボメイツ",
+    "カワラボ",
+    "カワイイラボ"
+  ],
+  "Toi Toi Toi": [
+    "トイトイトイ"
+  ],
+  "fav me": [
+    "ファブミー",
+    "ファヴミー"
+  ],
+  "アキシブproject": [
+    "アキシブプロジェクト"
+  ],
+  "NANIMONO": [
+    "ナニモノ"
+  ],
+  "Palette Parade": [
+    "パレットパレード",
+    "パレパレ"
+  ],
+  "LinQ": [
+    "リンク"
+  ],
+  "SEKAIE☆": [
+    "セカイエ"
+  ],
+  "chuLa": [
+    "チュラ"
+  ],
+  "BNSI": [
+    "ビーエヌエスアイ"
+  ],
+  "selfish": [
+    "セルフィッシュ"
+  ],
+  "HIBANA": [
+    "ヒバナ"
+  ],
+  "FULIT BOX": [
+    "フリットボックス",
+    "フリット"
+  ],
+  "feelNEO": [
+    "フィールネオ"
+  ],
+  "HzMe": [
+    "ヘルツミー",
+    "ヘルツメ"
+  ],
+  "hakanai": [
+    "ハカナイ"
+  ],
+  "メイビーME": [
+    "メイビーミー"
+  ],
+  "Malcolm Mask McLaren": [
+    "マルコムマスクマクラーレン",
+    "マルコム"
+  ],
+  "metarium": [
+    "メタリウム"
+  ],
+  "Ma'Scar'Piece": [
+    "マスカーピース",
+    "マスカピース"
+  ],
+  "RAVIDAVI": [
+    "ラビダビ"
+  ],
+  "HelloYouth": [
+    "ハローユース"
+  ],
+  "Chuu♡Cute": [
+    "チューキュート",
+    "チュウキュート"
+  ],
+  "Lily S/ash": [
+    "リリースラッシュ",
+    "リリーサッシュ"
+  ],
+  "AOSTARIA": [
+    "アオスタリア"
+  ],
+  "Maison de Queen": [
+    "メゾンドクイーン"
+  ],
+  "RePLAY": [
+    "リプレイ"
+  ],
+  "KissBee": [
+    "キスビー"
+  ],
+  "MEOWMEW": [
+    "ミャウミュー",
+    "ミオミュー",
+    "ミャウミュウ"
+  ],
+  "XINXIN": [
+    "シンシン"
+  ],
+  "Lily scale": [
+    "リリースケール"
+  ],
+  "PIAGRIM": [
+    "ピアグリム"
+  ],
+  "LIE LILLIE": [
+    "リーリリー",
+    "リエリリエ"
+  ],
+  "SAISON": [
+    "セゾン"
+  ],
+  "Aivery": [
+    "アイベリー",
+    "エイヴェリー",
+    "エイベリー"
+  ],
+  "buGG": [
+    "バグ"
+  ],
+  "KAMAITACI": [
+    "カマイタチ"
+  ],
+  "STARRY×NIGHT↗": [
+    "スターリーナイト"
+  ],
+  "unFinale Tokyo": [
+    "アンフィナーレトーキョー",
+    "アンフィナーレ"
+  ],
+  "Secret Pinky": [
+    "シークレットピンキー"
+  ],
+  "As a Cutie Pomeranian": [
+    "アズアキューティーポメラニアン",
+    "キューティーポメラニアン"
+  ],
+  "As a Cutie. Faster edition": [
+    "アズアキューティー",
+    "キューティー"
+  ],
+  "IMINI": [
+    "イミニ",
+    "アイミニ"
+  ],
+  "iMIN!": [
+    "イミン",
+    "アイミン"
+  ],
+  "Pastel Closet": [
+    "パステルクローゼット"
+  ],
+  "MEGAFON": [
+    "メガフォン"
+  ],
+  "III": [
+    "スリー",
+    "アイアイアイ"
+  ],
+  "AdamLilith": [
+    "アダムリリス"
+  ],
+  "TENRIN": [
+    "テンリン"
+  ],
+  "LADYBABY": [
+    "レディベイビー"
+  ],
+  "ION!": [
+    "アイオン",
+    "イオン"
+  ],
+  "ZUTTOMOTTO": [
+    "ズットモット"
+  ],
+  "CAL&RES": [
+    "カルレス"
+  ],
+  "INUWASI": [
+    "イヌワシ"
+  ],
+  "Appare!": [
+    "アッパレ"
+  ],
+  "NEO JAPONISM": [
+    "ネオジャポニズム",
+    "ネオジャポ"
+  ],
+  "JamsCollection": [
+    "ジャムズコレクション",
+    "ジャムズ"
+  ],
+  "AOAO": [
+    "アオアオ"
+  ],
+  "myojou": [
+    "ミョウジョウ",
+    "ミョージョー"
+  ],
+  "THE ENCORE": [
+    "ジアンコール",
+    "アンコール"
+  ],
+  "2nd争奪 Aブロック1位": [
+    "セカンドソウダツエーブロックイチイ"
+  ],
+  "#Mooove!": [
+    "ムーブ",
+    "ムーヴ"
+  ],
+  "NEVER END ROLL": [
+    "ネバーエンドロール"
+  ],
+  "Tohkei": [
+    "トウケイ"
+  ],
+  "amini": [
+    "アミニ"
+  ],
+  "MyDearDarlin'": [
+    "マイディアダーリン",
+    "マイディア"
+  ],
+  "STAiNY": [
+    "ステイニー"
+  ],
+  "RiNCENT♯": [
+    "リンセント"
+  ],
+  "ChumToto": [
+    "チャムトト"
+  ],
+  "himawari(船橋)": [
+    "ヒマワリ"
+  ],
+  "Lv.♡Charm": [
+    "レベルチャーム"
+  ],
+  "Märmi": [
+    "マーミ"
+  ],
+  "MAGICAL SPEC": [
+    "マジカルスペック"
+  ],
+  "Bunny La Crew": [
+    "バニーラクルー"
+  ],
+  "LOVE CHANT": [
+    "ラブチャント"
+  ],
+  "My Dresscode": [
+    "マイドレスコード",
+    "マイドレ"
+  ],
+  "ON THE AIR": [
+    "オンジエア",
+    "オンザエア"
+  ],
+  "SUPER JYAPON": [
+    "スーパージャポン"
+  ],
+  "BANKURUWASE!!": [
+    "バンクルワセ"
+  ],
+  "ParaLulu": [
+    "パラルル"
+  ],
+  "BUNGEE GUM.": [
+    "バンジーガム"
+  ],
+  "&CUTE": [
+    "アンドキュート"
+  ],
+  "BabyDoll": [
+    "ベイビードール"
+  ],
+  "GILTY×GILTY": [
+    "ギルティギルティ"
+  ],
+  "iLiFE!": [
+    "アイライフ"
+  ],
+  "KAWAII LAB. SOUTH": [
+    "カワイイラボサウス",
+    "カワラボサウス"
+  ],
+  "ZOCX": [
+    "ゾックエックス",
+    "ゾックス"
+  ],
+  "MORE STAR": [
+    "モアスター"
+  ],
+  "Merry BAD TUNE.": [
+    "メリーバッドチューン",
+    "メリバチ"
+  ],
+  "AVAM": [
+    "アヴァム",
+    "アバム"
+  ],
+  "@onefive": [
+    "ワンファイブ"
+  ],
+  "OS☆U": [
+    "オーエスユー"
+  ],
+  "愛乙女★DOLL": [
+    "ラブリードール"
+  ],
+  "AKANECLUB.": [
+    "アカネクラブ"
+  ],
+  "Ringwanderung": [
+    "リングワンデルング",
+    "リンワン"
+  ],
+  "AsIs": [
+    "アズイズ"
+  ],
+  "Pretty Chuu": [
+    "プリティチュー"
+  ],
+  "Sweet Alley": [
+    "スイートアレイ"
+  ],
+  "Peel the Apple": [
+    "ピールジアップル",
+    "ピールザアップル",
+    "ピルアポ"
+  ],
+  "Root mimi": [
+    "ルートミミ"
+  ],
+  "Sophià la Mode": [
+    "ソフィアラモード"
+  ],
+  "Switch Drop": [
+    "スイッチドロップ"
+  ],
+  "THE PINK MINDS": [
+    "ザピンクマインズ",
+    "ピンクマインズ"
+  ],
+  "VVSis": [
+    "ブイブイシス",
+    "ブイヴィーシス"
+  ],
+  "MixVeil": [
+    "ミックスベール"
+  ],
+  "Luce Twinkle Wink☆": [
+    "ルーチェトゥインクルウィンク",
+    "ルーチェ"
+  ],
+  "One Last Bloom": [
+    "ワンラストブルーム"
+  ],
+  "MATE×MATE!": [
+    "メイトメイト"
+  ],
+  "Lumiétoile": [
+    "ルミエトワール"
+  ],
+  "Bibbidi Chu": [
+    "ビビディチュー"
+  ],
+  "AZATOY": [
+    "アザトイ"
+  ],
+  "Cherie!": [
+    "シェリー"
+  ],
+  "ESTLINK☆": [
+    "エストリンク"
+  ],
+  "SPRISE": [
+    "スプライズ"
+  ],
+  "Krays": [
+    "クレイズ"
+  ],
+  "Panic Monster !n Wonderland": [
+    "パニックモンスターインワンダーランド",
+    "パニモン"
+  ],
+  "Lって何のLですか？": [
+    "エルッテナンノエルデスカ"
+  ],
+  "YumeLia": [
+    "ユメリア"
+  ],
+  "Drug&Drop": [
+    "ドラッグアンドドロップ"
+  ],
+  "I MY ME MINE": [
+    "アイマイミーマイン"
+  ],
+  "LittleSignal": [
+    "リトルシグナル"
+  ],
+  "Melty BeaR": [
+    "メルティベア"
+  ],
+  "PiRiRi": [
+    "ピリリ"
+  ],
+  "W.ダブルヴィー": [
+    "ダブルヴィー"
+  ],
+  "SAI²Rium": [
+    "サイリウム"
+  ],
+  "i-COL": [
+    "アイコル"
+  ],
+  "Rain Tree": [
+    "レインツリー"
+  ],
+  "STU48": [
+    "エスティーユーフォーティーエイト",
+    "エスティーユー"
+  ],
+  "SWEET STEADY": [
+    "スイートステディ",
+    "スイステ"
+  ],
+  "Ma'Scar' Piece": [
+    "マスカーピース",
+    "マスカピース"
+  ],
+  "LillyS/ash": [
+    "リリースラッシュ"
+  ],
+  "Falench.": [
+    "ファレンチ"
+  ],
+  "COLOR of COLOR": [
+    "カラーオブカラー"
+  ],
+  "NO FRAME": [
+    "ノーフレーム"
+  ],
+  "WASURENA": [
+    "ワスレナ"
+  ],
+  "MeIMI": [
+    "メイミ"
+  ],
+  "ネコプラpixx.": [
+    "ネコプラピックス"
+  ],
+  "iCON!": [
+    "アイコン"
+  ],
+  "Lollipop♡CHU": [
+    "ロリポップチュー"
+  ],
+  "FRESH CHARM": [
+    "フレッシュチャーム"
+  ],
+  "玉響storage": [
+    "タマユラストレージ"
+  ],
+  "Aerolipop": [
+    "エアロリポップ"
+  ],
+  "AQA": [
+    "アクア"
+  ],
+  "CURE'T": [
+    "キュアット",
+    "キュアティ"
+  ],
+  "SPRSE": [
+    "スプライズ"
+  ],
+  "2nd season Aブロック1位": [
+    "セカンドシーズンエーブロック"
+  ],
+  "2nd season Aブロック2位": [
+    "セカンドシーズンエーブロック"
+  ],
+  "2nd season A3位": [
+    "セカンドシーズンエー"
+  ],
+  "2nd season Bブロック1位": [
+    "セカンドシーズンビーブロック"
+  ],
+  "2nd season B2位": [
+    "セカンドシーズンビー"
+  ],
+  "2nd season B3位": [
+    "セカンドシーズンビー"
+  ],
+  "2nd争奪 Bブロック1位": [
+    "セカンドソウダツビーブロック"
+  ],
+  "2nd争奪 Aブロック2位": [
+    "セカンドソウダツエーブロック"
+  ],
+  "2nd争奪 A3位": [
+    "セカンドソウダツエー"
+  ],
+  "2nd争奪 B2位": [
+    "セカンドソウダツビー"
+  ],
+  "2nd争奪 B3位": [
+    "セカンドソウダツビー"
+  ]
+};
+const readingsByNormalizedName = new Map(
+  Object.entries(groupReadingAliases).map(([name, readings]) => [normalize(name), readings.map(normalize)])
+);
+const nameSearchCache = new Map();
+function searchableGroupName(group) {
+  if (nameSearchCache.has(group)) return nameSearchCache.get(group);
+  // 「BabyDoll（出演権争奪A3位）」など注記付きの名前にも同じ読みを使う。
+  const withoutQualifier = group.replace(/[（(].*$/, "");
+  const aliases = readingsByNormalizedName.get(normalize(group)) ||
+    readingsByNormalizedName.get(normalize(withoutQualifier)) || [];
+  const searchString = [normalize(group), ...aliases].join(" ");
+  nameSearchCache.set(group, searchString);
+  return searchString;
+}
+
+function render() {
+  syncFilters();
+  updateTimeStatus();
+  const query = searchInput.value.trim();
+  const queries = query ? query.split(/\s+/).map(q => normalize(q)).filter(Boolean) : [];
+  
+  let filtered = schedule.filter(s => {
+    const itemType = s.type || "tokuten";
+    if (currentDay !== "all" && s.day !== parseInt(currentDay)) return false;
+    if (showMySchedule) return isSelected(s);
+    if (currentType !== "all" && itemType !== currentType) return false;
+    if (currentStage !== "all" && (itemType !== "live" || s.stage !== currentStage)) return false;
+    if (!matchedTime(s)) return false;
+    if (queries.length === 0) return true;
+    const g = searchableGroupName(s.group) + " " +
+      normalize((s.note || "") + (s.type === "ennichi" ? " 縁日 えんにち ENNICHI" : "") +
+      (s.heroines ? " HEROINES ヒロインズ" : ""));
+    return queries.some(q => g.includes(q));
+  });
+
+  filtered.sort((a, b) => {
+    if (a.day !== b.day) return a.day - b.day;
+    return a.start.localeCompare(b.start);
+  });
+
+  const selectedCount = selected.length;
+  countDiv.textContent = showMySchedule 
+    ? `マイスケジュール: ${filtered.length} 件` 
+    : (filtered.length ? `${currentStage !== "all" ? currentStage + " STAGE：" : ""}${filtered.length} 件ヒット（選択中: ${selectedCount}）` : `${currentStage !== "all" ? currentStage + " STAGE：" : ""}0 件ヒット（選択中: ${selectedCount}）`);
+
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = showMySchedule 
+      ? '<div class="empty">まだグループが選択されていません。<br>検索結果の★を押して追加してください。</div>'
+      : '<div class="empty">該当する予定が見つかりません。<br>グループ名・日付・時間帯を確認してください。</div>';
+    return;
+  }
+
+  let html = showMySchedule ? '<div class="my-schedule-header">★ マイスケジュール（タイムテーブル）</div>' : '';
+
+  if (showMySchedule && filtered.length > 0) {
+    // ★登録済みの予定を、同じ日付かつ実際に時間が重なる組み合わせとして判定。
+    const conflictPairs = selectedConflicts(filtered);
+    if (conflictPairs.length) {
+      html += `<div class="conflict-panel" role="status"><strong>⚠️ 時間が重なっている予定：${conflictPairs.length}組</strong>
+        <div class="hint" style="color:#eed9cf;">重複時間と場所を確認できます。移動・整列・入場待ち時間は含みません。</div>
+        ${conflictPairs.map(pair=>`<div class="conflict-pair"><div class="conflict-meta">DAY${pair.a.day}　${pair.start}〜${pair.end}（${pair.minutes}分重複）</div>
+          <div>${displayGroup(pair.a)}（${itemLocation(pair.a,true)}）</div><div>↔ ${displayGroup(pair.b)}（${itemLocation(pair.b,true)}）</div></div>`).join("")}
+      </div>`;
+    } else {
+      html += '<div class="conflict-panel no-conflict">✅ ★登録済みの予定に時間の重なりはありません。<div class="hint">※移動・整列時間などは考慮していません。</div></div>';
+    }
+    // Original card-style view
+    const byDay = {};
+    filtered.forEach(s => {
+      if (!byDay[s.day]) byDay[s.day] = [];
+      byDay[s.day].push(s);
+    });
+    const days = Object.keys(byDay).sort((a,b) => a-b);
+    html += `<div id="scheduleCapture">`;
+    html += days.map(day => {
+      const items = byDay[day].sort((a,b) => a.start.localeCompare(b.start));
+      const dateStr = ["","10/30(金)","10/31(土)","11/01(日)"][day];
+      return `
+        <div style="margin-bottom:1.2rem;">
+          <h3 style="margin:0 0 0.6rem; color:#ff6b00;">DAY${day} ${dateStr}</h3>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            ${items.map(s => {
+              const location = itemLocation(s, true);
+              const overlapping = conflictsFor(s, conflictPairs).length;
+              return `<div class="my-event ${overlapping ? "has-conflict" : ""}" style="display:flex; flex-wrap:wrap; gap:0.3rem; justify-content:space-between; align-items:center; background:#3a2040; padding:0.6rem 0.8rem; border-radius:8px;">
+                <span style="font-weight:bold; color:#ffd166; min-width:100px;">${s.start}〜${s.end}</span>
+                <span style="flex:1; margin:0 0.5rem; font-weight:bold;">${displayGroup(s)} ${overlapping ? `<span class="conflict-mark">⚠️ ${overlapping}件と重複</span>` : ""}</span>
+                <span style="color:#c77dff; font-size:0.9rem;">${location}</span>
+              </div>${ilifeNote(s)}`;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }).join("");
+    html += `</div>
+      <div style="text-align:center; margin-top:1rem; display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
+        <button id="flowViewBtn" style="padding:0.7rem 1.2rem; background:#c77dff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📅 1日の流れを見る</button>
+        <button id="backToListBtn" style="padding:0.7rem 1.2rem; background:#3a2040; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; display:none;">← リストに戻る</button>
+        <button class="saveImageBtn" data-save-day="1" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY1保存</button>
+        <button class="saveImageBtn" data-save-day="2" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY2保存</button>
+        <button class="saveImageBtn" data-save-day="3" style="padding:0.7rem 1rem; background:#ff6b00; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 DAY3保存</button>
+        <button class="saveImageBtn" data-save-all="true" style="padding:0.7rem 1rem; background:#c77dff; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📷 全日程保存</button>
+      </div>`;
+    resultsDiv.innerHTML = html;
+
+    const captureDiv = document.getElementById("scheduleCapture");
+    const originalHtml = captureDiv.innerHTML;
+    const flowBtn = document.getElementById("flowViewBtn");
+    const backBtn = document.getElementById("backToListBtn");
+    let scheduleViewMode = "list";
+
+    flowBtn?.addEventListener("click", () => {
+      scheduleViewMode = "flow";
+      const flowHtml = days.map(day => {
+        const items = byDay[day].sort((a,b) => a.start.localeCompare(b.start));
+        const dateStr = ["","10/30(金)","10/31(土)","11/01(日)"][day];
+        const timeline = [];
+        let current = eventStartTime(day);
+        const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60 + m; };
+        items.forEach(s => {
+          const startMin = toMin(s.start);
+          const curMin = toMin(current);
+          if (startMin > curMin) {
+            timeline.push({start: current, end: s.start, group: "休憩・空き時間", type: "break"});
+          }
+          timeline.push({...s, type: s.type || "tokuten"});
+          current = formatMinutes(Math.max(toMin(current),toMin(s.end)));
+        });
+        if (toMin(current) < toMin("21:00")) {
+          timeline.push({start: current, end: "21:00", group: "休憩・空き時間", type: "break"});
+        }
+        return `
+          <div style="margin-bottom:1.2rem;">
+            <h3 style="margin:0 0 0.6rem; color:#ff6b00;">DAY${day} ${dateStr} の流れ</h3>
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+              ${timeline.map(t => {
+                const isBreak = t.type === "break";
+                const overlapping = !isBreak && conflictsFor(t, conflictPairs).length;
+                const content = isBreak ? "☕ 休憩・空き時間" : `${overlapping ? "⚠️ " : ""}${displayGroup(t)}　${itemLocation(t,true)}`;
+                return `<div style="display:flex; justify-content:space-between; align-items:center; background:${isBreak ? "#2a2035" : "#3a2040"}; padding:0.5rem 0.7rem; border-radius:6px; color:${isBreak ? "#b8a090" : "inherit"};">
+                  <span style="font-weight:bold; color:#ffd166; min-width:100px;">${t.start}〜${t.end}</span>
+                  <span style="flex:1;">${content}</span>
+                </div>`;
+              }).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+      captureDiv.innerHTML = flowHtml;
+      flowBtn.style.display = "none";
+      backBtn.style.display = "inline-block";
+    });
+
+    backBtn?.addEventListener("click", () => {
+      scheduleViewMode = "list";
+      captureDiv.innerHTML = originalHtml;
+      flowBtn.style.display = "inline-block";
+      backBtn.style.display = "none";
+    });
+
+    // iPhone Safari対応：DAY1/DAY2/DAY3/全日程を個別のPNG画像として保存
+    document.querySelectorAll(".saveImageBtn").forEach(saveBtn => {
+      saveBtn.addEventListener("click", async () => {
+        const isAll = saveBtn.dataset.saveAll === "true";
+        const requestedDay = isAll ? null : Number(saveBtn.dataset.saveDay);
+        const exportItems = filtered
+          .filter(item => isAll || item.day === requestedDay)
+          .slice()
+          .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+        if (!exportItems.length) {
+          alert(isAll ? "保存できる予定がありません。" : `DAY${requestedDay}に選択中の予定がありません。`);
+          return;
+        }
+        const originalLabel = saveBtn.textContent;
+        saveBtn.textContent = "画像を作成中...";
+        saveBtn.disabled = true;
+        let previewUrl = null;
+        let exportTarget = null;
+        try {
+          if (typeof html2canvas === "undefined") {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+              script.onload = resolve;
+              script.onerror = () => reject(new Error("画像作成ライブラリを読み込めませんでした"));
+              document.head.appendChild(script);
+              setTimeout(() => reject(new Error("読み込みがタイムアウトしました")), 10000);
+            });
+          }
+
+          // 画面表示中のリスト/タイムライン表示に影響されない専用の画像内容を作る
+          exportTarget = document.createElement("div");
+          exportTarget.style.cssText = "position:fixed;left:-10000px;top:0;width:760px;padding:24px;background:#1a0f1f;color:#f8e8d0;font-family:Arial,'Hiragino Sans',Meiryo,sans-serif;box-sizing:border-box;";
+          const viewLabel = scheduleViewMode === "flow" ? "1日の流れ" : "リスト";
+          const heading = document.createElement("h2");
+          heading.textContent = isAll ? `★ マイスケジュール（全日程・${viewLabel}）` : `★ マイスケジュール DAY${requestedDay} ${["","10/30(金)","10/31(土)","11/01(日)"][requestedDay]}（${viewLabel}）`;
+          heading.style.cssText = "margin:0 0 20px;color:#c77dff;text-align:center;font-size:24px;";
+          exportTarget.appendChild(heading);
+          const exportConflicts=selectedConflicts(exportItems);
+          if(exportConflicts.length) {
+            const warning=document.createElement("div");
+            warning.textContent=`⚠️ 時間が重なる予定：${exportConflicts.length}組 ／ ${exportConflicts.map(p=>`DAY${p.a.day} ${p.start}〜${p.end} ${p.a.group} ↔ ${p.b.group}`).join(" ・ ")}`;
+            warning.style.cssText="padding:12px;background:#36202c;border:1px solid #ff9b73;border-radius:8px;line-height:1.5;color:#ffd9c0;margin-bottom:10px;overflow-wrap:anywhere;";
+            exportTarget.appendChild(warning);
+          }
+          const daysToRender = [...new Set(exportItems.map(item => item.day))].sort((a,b) => a-b);
+          const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
+          daysToRender.forEach(day => {
+            const dayItems = exportItems.filter(item => item.day === day).sort((a,b) => a.start.localeCompare(b.start));
+            const dayHeading = document.createElement("h3");
+            dayHeading.textContent = scheduleViewMode === "flow"
+              ? `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]} の流れ`
+              : `DAY${day} ${["","10/30(金)","10/31(土)","11/01(日)"][day]}`;
+            dayHeading.style.cssText = "margin:18px 0 10px;color:#ff6b00;font-size:20px;";
+            exportTarget.appendChild(dayHeading);
+            let rows = dayItems;
+            if (scheduleViewMode === "flow") {
+              rows = [];
+              let current = eventStartTime(day);
+              dayItems.forEach(item => {
+                if (toMin(item.start) > toMin(current)) rows.push({start:current,end:item.start,isBreak:true});
+                rows.push(item);
+                current = formatMinutes(Math.max(toMin(current),toMin(item.end)));
+              });
+              if (toMin(current) < toMin("21:00")) rows.push({start:current,end:"21:00",isBreak:true});
+            }
+            rows.forEach(item => {
+              const row = document.createElement("div");
+              row.style.cssText = `display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:12px;background:${item.isBreak ? "#2a2035" : "#3a2040"};border-radius:8px;font-size:16px;color:${item.isBreak ? "#b8a090" : "#f8e8d0"};`;
+              const time = document.createElement("span");
+              time.textContent = `${item.start}〜${item.end}`;
+              time.style.cssText = "font-weight:bold;color:#ffd166;min-width:125px;";
+              const group = document.createElement("span");
+              group.textContent = item.isBreak ? "☕ 休憩・空き時間" : `${conflictsFor(item,exportConflicts).length ? "⚠️ " : ""}${displayGroup(item)}`;
+              group.style.cssText = "flex:1;font-weight:bold;overflow-wrap:anywhere;";
+              const place = document.createElement("span");
+              place.textContent = item.isBreak ? "" : itemLocation(item,true);
+              place.style.cssText = "color:#c77dff;font-size:14px;";
+              row.append(time, group, place);
+              exportTarget.appendChild(row);
+            });
+          });
+          document.body.appendChild(exportTarget);
+          const canvas = await html2canvas(exportTarget, {
+            backgroundColor: "#1a0f1f", scale: 2, useCORS: true, logging: false,
+            windowWidth: 800
+          });
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => result ? resolve(result) : reject(new Error("PNG画像を作成できませんでした")), "image/png");
+          });
+          previewUrl = URL.createObjectURL(blob);
+          const fileName = isAll ? "IHJ2026_マイスケジュール_全日程.png" : `IHJ2026_マイスケジュール_DAY${requestedDay}.png`;
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          if (isIOS) {
+            const oldModal = document.getElementById("imageSaveModal");
+            if (oldModal) oldModal.remove();
+            const modal = document.createElement("div");
+            modal.id = "imageSaveModal";
+            modal.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);overflow:auto;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;color:#fff;font-family:inherit;";
+            const title = document.createElement("div");
+            title.textContent = `${isAll ? "全日程" : `DAY${requestedDay}`}の画像ができました`;
+            title.style.cssText = "font-size:1.2rem;font-weight:bold;margin-top:8px;";
+            const guide = document.createElement("div");
+            guide.textContent = "下の画像を長押しして、『写真に保存』を選んでください。";
+            guide.style.cssText = "font-size:.95rem;text-align:center;line-height:1.6;";
+            const img = document.createElement("img");
+            img.src = previewUrl;
+            img.alt = `${fileName}。長押しして写真に保存できます`;
+            img.style.cssText = "display:block;width:100%;height:auto;max-width:720px;border:1px solid #777;border-radius:8px;touch-action:manipulation;";
+            const openBtn = document.createElement("button");
+            openBtn.textContent = "画像だけを開く";
+            openBtn.style.cssText = "padding:12px 18px;border:0;border-radius:8px;background:#c77dff;color:white;font-weight:bold;font-size:1rem;";
+            openBtn.addEventListener("click", () => { window.open(previewUrl, "_blank"); });
+            const closeBtn = document.createElement("button");
+            closeBtn.textContent = "閉じる";
+            closeBtn.style.cssText = "padding:10px 18px;border:1px solid #aaa;border-radius:8px;background:#333;color:white;font-size:1rem;margin-bottom:20px;";
+            closeBtn.addEventListener("click", () => { modal.remove(); if (previewUrl) URL.revokeObjectURL(previewUrl); });
+            modal.append(title, guide, img, openBtn, closeBtn);
+            document.body.appendChild(modal);
+          } else {
+            const link = document.createElement("a");
+            link.download = fileName;
+            link.href = previewUrl;
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+          }
+        } catch (e) {
+          console.error("画像保存エラー:", e);
+          alert("画像を作成できませんでした。通信状態を確認して、もう一度お試しください。");
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+        } finally {
+          if (exportTarget) exportTarget.remove();
+          saveBtn.textContent = originalLabel;
+          saveBtn.disabled = false;
+        }
+      });
+    });
+    return;
+  }
+
+  html += filtered.map((s,slotIndex) => {
+    const selectedClass = isSelected(s) ? "selected" : "";
+    const star = isSelected(s) ? "★" : "☆";
+    const location = s.type === "live" ? `ステージ: ${s.stage}` : s.type === "ennichi" ? `縁日ブース ${s.booth}` : `ブース ${s.booth || ""}`;
+    const typeLabel = itemKind(s);
+    const collisions = selected.filter(sel => slotKey(sel) !== slotKey(s) && overlapMinutes(sel,s)>0);
+    const collisionText = collisions.length ? `<div class="collision-hint">⚠️ ★登録済み「${collisions.slice(0,2).map(x=>`${x.group}（${overlapMinutes(x,s)}分）`).join("、")}」${collisions.length>2 ? `ほか${collisions.length-2}件` : ""}と時間重複</div>` : "";
+    return `
+    <div class="slot ${selectedClass} ${s.type === "ennichi" ? "ennichi-slot" : ""}">
+      <div class="info">
+        <h3>${displayGroup(s)} <span class="booth">${location}</span></h3>
+        <div class="meta">${typeLabel} ｜ DAY${s.day} ｜ ${["","10/30(金)","10/31(土)","11/01(日)"][s.day]}</div>
+        ${collisionText}
+        ${queries.length ? `<button type="button" class="overlap-shortcut" data-slot-index="${slotIndex}" aria-label="${s.group}と同時間帯の予定を表示">🕒 この予定と重なる枠を見る</button>` : ""}
+      </div>
+      <div class="slot-time-actions" style="display:flex; align-items:center; gap:0.5rem;">
+        <div class="time">${s.start} 〜 ${s.end}</div>
+        <button class="select-btn" data-day="${s.day}" data-booth="${s.booth || s.stage}" data-group="${encodeURIComponent(s.group)}" data-start="${s.start}" data-type="${s.type || 'tokuten'}">${star}</button>
+      </div>
+    </div>${ilifeNote(s)}
+  `;
+  }).join("");
+
+  resultsDiv.innerHTML = html;
+
+  document.querySelectorAll(".overlap-shortcut").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = filtered[Number(btn.dataset.slotIndex)];
+      if (!item) return;
+      currentDay = String(item.day);
+      currentType = "all";
+      currentStage = "all"; // 同時刻の全種類・全ステージを表示
+      showMySchedule = false;
+      myScheduleBtn.textContent = "★ マイスケジュールを見る";
+      searchInput.value="";
+      timeFromInput.value=item.start;
+      timeToInput.value=item.end;
+      timeInputMode="custom";
+      syncFilters();
+      render();
+      document.querySelector(".controls").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  document.querySelectorAll(".select-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const day = parseInt(btn.dataset.day);
+      const boothOrStage = btn.dataset.booth;
+      const group = decodeURIComponent(btn.dataset.group);
+      const start = btn.dataset.start;
+      const type = btn.dataset.type;
+      const item = schedule.find(s => s.day === day && (String(s.booth) === boothOrStage || s.stage === boothOrStage) && s.group === group && s.start === start && (s.type || "tokuten") === type);
+      if (item) toggleSelect(item);
+    });
+  });
+}
+
+searchInput.addEventListener("input", () => {
+  showMySchedule = false;
+  myScheduleBtn.textContent = "★ マイスケジュールを見る";
+  render();
+});
+
+dayButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    dayButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentDay = btn.dataset.day;
+    closeTimePicker();
+    if (timeInputMode === "auto") setEventTimeDefaults();
+    showMySchedule = false;
+    myScheduleBtn.textContent = "★ マイスケジュールを見る";
+    render();
+  });
+});
+
+typeButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentType = btn.dataset.type;
+    currentStage = "all"; // 種類を切り替えたら以前のステージ指定は解除
+    showMySchedule = false;
+    myScheduleBtn.textContent = "★ マイスケジュールを見る";
+    render();
+  });
+});
+
+stageButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentStage = btn.dataset.stage;
+    if (currentStage !== "all") currentType = "live"; // 特定ステージはライブのみ
+    showMySchedule = false;
+    myScheduleBtn.textContent = "★ マイスケジュールを見る";
+    render();
+  });
+});
+
+myScheduleBtn.addEventListener("click", () => {
+  showMySchedule = !showMySchedule;
+  myScheduleBtn.textContent = showMySchedule ? "検索に戻る" : "★ マイスケジュールを見る";
+  if (showMySchedule) {
+    searchInput.value = "";
+    currentDay="all";
+    currentType="all";
+    currentStage="all";
+    if (timeInputMode === "auto") setEventTimeDefaults();
+    syncFilters();
+  }
+  render();
+});
+
+// 編集途中で自動的に「14:00」へ戻すと、Backspaceでも消せなくなるため、
+// 入力中は一切値を上書きしない。確定（blur/Enter）時だけ書式を整える。
+[timeFromInput,timeToInput].forEach(input => {
+  input.addEventListener("focus", () => {
+    // デフォルト値を置き換えやすくする。選択範囲を変えれば部分編集も可能。
+    input.select();
+  });
+  input.addEventListener("input", (event) => {
+    // maxlength=5 は 14:00（コロン込み）用。数字5桁はここで制限する。
+    // 貼り付け・全角数字・スマホIMEの入力も一律検証する。
+    if (!event.isComposing) sanitizeTimeDraft(input);
+    timeInputMode="custom";
+    showMySchedule=false;
+    myScheduleBtn.textContent="★ マイスケジュールを見る";
+    render();
+  });
+  input.addEventListener("compositionend", () => {sanitizeTimeDraft(input);render();});
+  input.addEventListener("blur", () => {commitTimeField(input);render();});
+  input.addEventListener("change", () => {commitTimeField(input);render();});
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitTimeField(input);
+      input.blur();
+      render();
+    }
+  });
+});
+
+// iPhone/Android/PC共通: 数字を打つ以外に「時」「分」をリストから選択できる。
+const timePickerPanel=document.getElementById("timePickerPanel");
+const pickTimeFrom=document.getElementById("pickTimeFrom");
+const pickTimeTo=document.getElementById("pickTimeTo");
+const pickerHour=document.getElementById("pickerHour");
+const pickerMinute=document.getElementById("pickerMinute");
+const pickerApply=document.getElementById("pickerApply");
+const pickerClose=document.getElementById("pickerClose");
+const timePickerHeading=document.getElementById("timePickerHeading");
+let pickerTarget=null;
+const makeOptions=(node,max)=>{
+  node.innerHTML=Array.from({length:max},(_,i)=>{
+    const n=String(i).padStart(2,"0");
+    return `<option value="${n}">${n}</option>`;
+  }).join("");
+};
+makeOptions(pickerHour,24);
+makeOptions(pickerMinute,60);
+function closeTimePicker(){
+  timePickerPanel.hidden=true;
+  pickerTarget=null;
+  pickTimeFrom.setAttribute("aria-expanded","false");
+  pickTimeTo.setAttribute("aria-expanded","false");
+}
+function openTimePicker(target){
+  if (pickerTarget===target && !timePickerPanel.hidden) {closeTimePicker();return;}
+  pickerTarget=target;
+  const input=target==="from" ? timeFromInput : timeToInput;
+  const fallback=target==="from" ? eventStartTime(currentDay) : eventEndTime;
+  const time=normalizedTime(input.value,true) || fallback;
+  const [h,m]=time.split(":");
+  pickerHour.value=h;
+  pickerMinute.value=m;
+  timePickerHeading.textContent=target==="from" ? "開始時刻を選択" : "終了時刻を選択";
+  timePickerPanel.hidden=false;
+  pickTimeFrom.setAttribute("aria-expanded",String(target==="from"));
+  pickTimeTo.setAttribute("aria-expanded",String(target==="to"));
+}
+pickTimeFrom.addEventListener("click",()=>openTimePicker("from"));
+pickTimeTo.addEventListener("click",()=>openTimePicker("to"));
+pickerClose.addEventListener("click",closeTimePicker);
+pickerApply.addEventListener("click",()=>{
+  if (!pickerTarget) return;
+  const input=pickerTarget==="from" ? timeFromInput : timeToInput;
+  input.value=`${pickerHour.value}:${pickerMinute.value}`;
+  timeInputMode="custom";
+  showMySchedule=false;
+  myScheduleBtn.textContent="★ マイスケジュールを見る";
+  closeTimePicker();
+  render();
+});
+timeResetBtn.addEventListener("click",()=> {
+  closeTimePicker();
+  setEventTimeDefaults();
+  showMySchedule=false;
+  myScheduleBtn.textContent="★ マイスケジュールを見る";
+  render();
+});
+timeClearBtn.addEventListener("click",()=> {
+  closeTimePicker();
+  clearTime();
+  showMySchedule=false;
+  myScheduleBtn.textContent="★ マイスケジュールを見る";
+  render();
+});
+
+clearSelectedBtn.addEventListener("click", () => {
+  if (confirm("選択をすべてクリアしますか？")) {
+    selected = [];
+    saveSelected();
+    showMySchedule = false;
+    myScheduleBtn.textContent = "★ マイスケジュールを見る";
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
